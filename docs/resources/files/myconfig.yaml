@@ -1,0 +1,42 @@
+# myconfig.yaml - Example configuration for wavefront simulation
+
+workflow:
+  - { component_id: "mywavefront", geometry: { position: 0.0 } }
+  - { component_id: "myaperture", geometry: { position: 1.0 } }
+  - { component_id: "mysample", geometry: { position: 2.0 } }
+  - { component_id: "mydetector", geometry: { position: 100.0 } }
+
+propagator: { type: "fresnel" }
+interactor: { type: "thin_object" }
+
+wavefront:
+  id: "mywavefront"
+  type: "constant"
+  properties:
+    amplitude: 1.0
+    phase: 0.0
+    energy: 10.0
+    shape: 512
+    spacing: 0.0001
+
+elements:
+  - id: "myaperture"
+    type: "coded_aperture"
+    properties:
+      material: "Au"
+      density: 19.3
+      thickness: 0.0001
+      bit_size: 64
+
+  - id: "mysample"
+    type: "custom_profile"
+    properties:
+      material: "C5H8O2"
+      density: 1.18
+      thickness: 0.001
+      custom_profile: "coho/resources/samples/lena.npy"
+
+detector: 
+  id: "mydetector"
+  type: "integrating"
+

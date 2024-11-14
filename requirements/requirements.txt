@@ -1,5 +1,0 @@
-numpy
-pyyaml
-fire
-xraylib
-matplotlib

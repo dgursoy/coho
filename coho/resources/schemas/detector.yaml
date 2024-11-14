@@ -1,0 +1,9 @@
+detector:
+  type: dict
+  schema:
+    id: {required: True}
+    type: {type: string, allowed: ["integrating", "photon_ounting"], required: True}
+    properties:
+      type: dict
+      schema:
+        parameters: {type: dict, required: False}

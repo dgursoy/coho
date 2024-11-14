@@ -1,0 +1,10 @@
+workflow:
+  type: list
+  schema:
+    type: dict
+    schema:
+      component_id: {required: True}
+      geometry:
+        type: dict
+        schema:
+          position: {type: float, min: 0.0, required: True}

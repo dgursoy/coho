@@ -1,0 +1,98 @@
+# Configuration for the documentation site
+site_name: Coho
+site_url: https://dgursoy.github.io/coho
+site_description: Documentation for Coho
+site_author: Doga Gursoy
+
+# Repository configuration
+repo_name: dgursoy/coho
+repo_url: https://github.com/dgursoy/coho
+
+# Theme configuration
+theme:
+  name: material
+  palette:
+    # Palette toggle for light mode
+    - scheme: slate
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to light mode
+    # Palette toggle for dark mode
+    - scheme: default
+      toggle:
+        icon: material/lightbulb
+        name: Switch to dark mode
+  font:
+    text: 'Roboco'
+    code: 'Roboco Mono' 
+  # Optional: Customize icons in the header
+  icon:
+    repo: fontawesome/brands/github  # Adds a GitHub icon linking to your repository
+  features:
+    # Navigation features
+    - navigation.top # Back to top button
+    - navigation.footer # Footer navigation
+    - navigation.instant # Loads pages dynamically without full refresh
+    - navigation.instant.progress # Shows loading progress bar during navigation
+    - navigation.tracking # URL hash update on scroll
+    - navigation.tabs # Top-level sections as tabs
+    - navigation.tabs.sticky # Keeps tabs visible while scrolling
+    - navigation.path # Shows breadcrumbs navigation path
+    
+    # Search features
+    - search.highlight # Highlight search results
+    - search.share # Share search results
+    - search.suggest # Search suggestions
+
+    # Content features
+    - content.code.copy # Copy button on code blocks
+    - content.code.annotate # Code annotations
+    - content.tooltips          # Tooltip on hover
+
+    # Header features
+    - header.autohide          # Hide header on scroll
+
+    # Table of contents features
+    - toc.integrate # Integrated table of contents
+
+# Navigation structure
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Quick Start: quickstart.md
+  - Usage:
+      - Overview: usage/index.md
+      - Basic Concepts: usage/basics.md
+      - Working with Apertures: usage/apertures.md
+      - Optical Elements: usage/elements.md
+      - Detector Setup: usage/detector.md
+      - Simulation Workflow: usage/simulation.md
+      - Configuration Guide: usage/configuration.md
+  - Examples:
+      - Overview: examples/index.md
+  - Contributing: 
+      - Overview: contributing/index.md
+      - Developer Setup Guide: contributing/setup_guide.md
+      - Code Style and Conventions: contributing/code_style.md
+      - Pull Request Guidelines: contributing/pull_request.md
+      - Code of Conduct: contributing/code_of_conduct.md
+      - API Reference: contributing/api_reference.md
+  - License: license.md
+
+# Extra configurations
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/dgursoy/coho
+  copyright:
+    text: "© 2024 Doga Gursoy. All rights reserved."
+  search:
+    highlight: true
+
+# Other configurations
+markdown_extensions:
+  - admonition # Adds admonition blocks
+  - pymdownx.details # Adds collapsible sections
+  - pymdownx.superfences # Enables nested code/content blocks
+  - footnotes # Adds [^1] footnote references
+  - pymdownx.highlight # Advanced code block highlighting

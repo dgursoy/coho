@@ -1,0 +1,45 @@
+# Pre-commit configuration
+# To update all hooks to latest versions:
+#   poetry run pre-commit autoupdate
+# To install hooks:
+#   poetry run pre-commit install
+# To run manually:
+#   poetry run pre-commit run --all-files
+#
+# Note: Pre-commit checks the current directory and its subdirectories.
+# To check specific files:
+#   poetry run pre-commit run --files path/to/file.py
+# To check specific types:
+#   poetry run pre-commit run --files "*.py" "*.yaml"
+
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+    # Code Style & Formatting
+    - id: trailing-whitespace  # Removes trailing whitespace
+    - id: end-of-file-fixer  # Ensures files end with a newline
+    - id: mixed-line-ending  # Replaces mixed line endings with LF
+    - id: fix-byte-order-marker  # Removes UTF-8 byte order marker
+
+    # Syntax & Structure Validation
+    - id: check-ast  # Ensures Python files are valid syntax
+    - id: check-yaml  # Validates YAML syntax
+    - id: check-json  # Validates JSON syntax
+    - id: check-toml  # Validates TOML syntax
+    - id: check-merge-conflict  # Check for files containing merge conflict strings
+
+    # Python Code Quality
+    - id: debug-statements  # Catches forgotten debugger statements
+    - id: check-docstring-first  # Checks a common error of putting code before the docstring
+    - id: name-tests-test  # Verifies that test files are named correctly
+
+    # Security & Safety
+    - id: detect-private-key  # Prevents accidental key commits
+    - id: no-commit-to-branch  # Prevent commits to main/master directly
+    - id: check-added-large-files  # Prevents large files from being committed
+
+    # File System Safety
+    - id: check-symlinks  # Checks for symlinks which do not point to anything
+    - id: destroyed-symlinks  # Detects symlinks which are changed to regular files
+    - id: forbid-new-submodules  # Prevents addition of new git submodules

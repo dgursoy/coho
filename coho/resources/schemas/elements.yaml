@@ -1,0 +1,16 @@
+elements:
+  type: list
+  schema:
+    type: dict
+    schema:
+      id: {required: True}
+      type: {type: string, allowed: ["coded_aperture", "slit_aperture", "circle_aperture", "custom_profile"], required: True}
+      properties:
+        type: dict
+        schema:
+          material: {type: string, required: True}
+          density: {type: float, min: 0.0, required: True}
+          thickness: {type: float, min: 0.0, required: True}
+          bit_size: {type: integer, min: 1, required: False}
+          custom_profile: {type: string, required: False}
+          seed: {type: integer, required: False}

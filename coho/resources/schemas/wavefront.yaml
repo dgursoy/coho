@@ -1,0 +1,16 @@
+wavefront:
+  type: dict
+  schema:
+    id: {required: true}
+    type: {type: string, allowed: ["constant", "gaussian", "rectangular"], required: true}
+    properties:
+      type: dict
+      schema:
+        amplitude: {type: float, min: 0.0, required: true}
+        phase: {type: float, required: true}
+        energy: {type: float, min: 0.0, required: true}
+        shape: {type: integer, min: 1, required: true}
+        spacing: {type: float, min: 0.0, required: true}
+        sigma: {type: float, min: 0.0, required: false}
+        width: {type: float, min: 0.0, required: false}
+        height: {type: float, min: 0.0, required: false}

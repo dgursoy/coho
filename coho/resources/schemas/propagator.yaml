@@ -1,0 +1,9 @@
+propagator:
+  type: dict
+  schema:
+    id: {required: False}
+    type: {type: string, allowed: ["fresnel", "fraunhofer"], required: True}
+    properties:
+      type: dict
+      schema:
+        parameters: {type: dict, required: False}

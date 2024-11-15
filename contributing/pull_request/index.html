@@ -1047,17 +1047,40 @@ If applicable
 <p><strong>Note:</strong> 
 To submit a PR:</p>
 <ol>
-<li>Fork and branch:
+<li>
+<p>Fork and branch:
    <div class="highlight"><pre><span></span><code>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>feature/your-feature-name<span class="w">  </span><span class="c1"># Use descriptive branch names</span>
-</code></pre></div></li>
-<li>Make changes and commit:
-   <div class="highlight"><pre><span></span><code>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;[TYPE] Brief description&quot;</span><span class="w">  </span><span class="c1"># Be clear and concise</span>
-</code></pre></div></li>
-<li>Push and set upstream:
+</code></pre></div></p>
+</li>
+<li>
+<p>Stage changes and commit:
+   <div class="highlight"><pre><span></span><code>git<span class="w"> </span>add<span class="w"> </span>.
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;[TYPE] Brief description&quot;</span><span class="w">  </span><span class="c1"># Be clear and concise</span>
+</code></pre></div></p>
+</li>
+<li>
+<p>Push and set upstream:
    <div class="highlight"><pre><span></span><code>git<span class="w"> </span>push<span class="w"> </span>-u<span class="w"> </span>origin<span class="w"> </span>feature/your-feature-name<span class="w">  </span><span class="c1"># -u links local and remote branches</span>
-</code></pre></div></li>
-<li>Open PR on <a href="https://github.com/dgursoy/coho">Coho repository</a></li>
-<li>Add title, description, and related issues</li>
+</code></pre></div></p>
+</li>
+<li>
+<p>Open PR on <a href="https://github.com/dgursoy/coho">Coho repository</a></p>
+</li>
+<li>
+<p>Add title, description, and related issues</p>
+</li>
+<li>
+<p>(optional) Clean up branches after merge:
+   <div class="highlight"><pre><span></span><code><span class="c1"># Delete local branch</span>
+git<span class="w"> </span>branch<span class="w"> </span>-d<span class="w"> </span>feature/your-feature-name
+
+<span class="c1"># Delete remote branch</span>
+git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>--delete<span class="w"> </span>feature/your-feature-name
+
+<span class="c1"># Clean up stale remote references</span>
+git<span class="w"> </span>fetch<span class="w"> </span>--prune
+</code></pre></div></p>
+</li>
 </ol>
 </blockquote>
 <h2 id="review-process">Review Process</h2>

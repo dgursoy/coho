@@ -8,7 +8,7 @@ operator:
       schema:
         id:
           type: string
-          required: true
+          required: false
         type:
           type: string
           required: true
@@ -16,6 +16,7 @@ operator:
         properties:
           type: dict
           required: true
+          default: {}
           schema:
             parameters:
               type: dict
@@ -27,7 +28,7 @@ operator:
       schema:
         id:
           type: string
-          required: true
+          required: false
         type:
           type: string
           required: true
@@ -35,6 +36,7 @@ operator:
         properties:
           type: dict
           required: true
+          default: {}
           schema:
             parameters:
               type: dict

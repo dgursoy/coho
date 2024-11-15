@@ -75,19 +75,7 @@ def parse_components(
     component_type: str, 
     id_gen: IdGenerator
 ) -> Union[Any, List[Any]]:
-    """Create one or more components of specified type.
-    
-    Args:
-        config: Single component configuration or list of configurations
-        component_type: Type of components to create
-        id_gen: ID generator for component identification
-
-    Returns:
-        Single component or list of initialized components
-
-    Raises:
-        ValueError: If component type is not supported
-    """
+    """Create one or more components of specified type."""
     factory = FACTORIES.get(component_type)
     if not factory:
         raise ValueError(f"Unknown component type: {component_type}")
@@ -95,14 +83,20 @@ def parse_components(
     # Handle single component case
     if isinstance(config, dict):
         component_id = id_gen.generate_id(component_type, config.get("id"))
+        # Default to empty dict if properties not specified
         properties = config.get("properties", {})
+        if properties is None:  # Handle explicit None case
+            properties = {}
         return factory.create(component_id, config["type"], properties)
 
     # Handle multiple components case
     components = []
     for cfg in config:
         component_id = id_gen.generate_id(component_type, cfg.get("id"))
+        # Default to empty dict if properties not specified
         properties = cfg.get("properties", {})
+        if properties is None:  # Handle explicit None case
+            properties = {}
         component = factory.create(component_id, cfg["type"], properties)
         components.append(component)
     return components

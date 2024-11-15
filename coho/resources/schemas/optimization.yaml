@@ -18,10 +18,12 @@ optimization:
         properties:
           type: dict
           required: true
+          default: {}
           schema:
             parameters:
               type: dict
               required: true
+              default: {}
 
     solver:
       type: dict
@@ -38,6 +40,7 @@ optimization:
         properties:
           type: dict
           required: true
+          default: {}
           schema:
             step_size:
               type: float

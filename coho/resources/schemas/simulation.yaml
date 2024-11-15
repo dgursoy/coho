@@ -16,6 +16,7 @@ simulation:
         properties:
           type: dict
           required: true
+          default: {}
           schema:
             amplitude: {type: float, min: 0.0, required: true}
             phase: {type: float, required: true}
@@ -39,6 +40,7 @@ simulation:
         properties:
           type: dict
           required: true
+          default: {}
           schema:
             material: {type: string, required: true}
             density: {type: float, min: 0.0, required: true}
@@ -60,6 +62,7 @@ simulation:
         properties:
           type: dict
           required: true
+          default: {}
           schema:
             material: {type: string, required: true}
             density: {type: float, min: 0.0, required: true}
@@ -80,6 +83,7 @@ simulation:
         properties:
           type: dict
           required: true
+          default: {}
           schema:
             parameters:
               type: dict

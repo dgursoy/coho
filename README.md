@@ -1,33 +1,32 @@
-# Coho: Coded Holography Simulation
+# Coho: Coded Holography
 
 Coho is a Python-based platform designed for simulating coded holography experiments. It provides a comprehensive set of tools for modeling, simulating, and analyzing holographic imaging systems that use coded apertures and coherent light sources.
 
 ## Key Features
 
-* Fast and efficient holography simulations
-* Support for various coding patterns and masks
-* Built-in analysis tools for holographic reconstructions
-* Easy integration with common scientific Python libraries
+* Extensible and modular architecture
+* Customizable experimental configurations
+* Developer-friendly with comprehensive examples
 
 ## Documentation
 
-Documentation is available [here](https://dgursoy.github.io/coho/).
+Check out our [documentation](https://dgursoy.github.io/coho/).
 
-* [Installation](installation.md) - Step-by-step installation guide
-* [Quick Start](quickstart.md) - Get started with basic examples
+## Want to try it out?
+
+See our [installation guide](docs/installation.md) to get started and [quick start](docs/quickstart.md) with basic examples.
 
 ## Getting Help
 
-* Visit our [GitHub repository](https://github.com/your-repo/coho)
-* Report issues on our [Issue Tracker](https://github.com/your-repo/coho/issues)
-* Join our community discussions
+* Visit our [GitHub repository](https://github.com/dgursoy/coho)
+* Report issues on our [Issue Tracker](https://github.com/dgursoy/coho/issues)
 
 ## Future Development
 
 Coho is under active development. Planned features include:
 
-* GPU acceleration support for faster computations
 * PyTorch integration for enhanced tensor operations and deep learning capabilities
+* GPU acceleration support for faster computations
 * Additional optimization methods and reconstruction algorithms
 
-Want to contribute? Check out our [contribution guidelines](contributing/index.md) and roadmap on GitHub.
+Want to contribute? Check out our [contribution guidelines](docs/contributing/index.md).

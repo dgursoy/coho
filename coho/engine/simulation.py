@@ -14,12 +14,13 @@ Workflow Stages:
     3. Detection and measurement
 """
 
-from typing import List, Dict, Optional
+from typing import List, Dict
 from ..core.wavefront import Wavefront
 from ..core.element import Element
 from ..core.detector import Detector
 from ..core.propagator import Propagator
 from ..core.interactor import Interactor
+
 
 class Simulation:
     """Orchestrates wavefront propagation through optical system."""
@@ -33,12 +34,12 @@ class Simulation:
         interactor: Interactor, 
         workflow: List[Dict]
     ) -> None:
-        """Initialize simulation.
-
+        """Initialize simulation components and workflow.
+        
         Args:
             wavefront: Initial field
             propagator: Propagation method
-            elements: Optical elements
+            elements: List of optical elements
             detector: Measurement device
             interactor: Interaction handler
             workflow: Component sequence:
@@ -46,72 +47,57 @@ class Simulation:
                   "geometry": {"position": float}}, 
                  ...]
         """
+        # Core components
         self.wavefront = wavefront
         self.propagator = propagator
-        self.elements = {element.id: element for element in elements}
         self.detector = detector
         self.interactor = interactor
+        
+        # Create element lookup by ID
+        self.elements = {element.id: element for element in elements}
+        
+        # Workflow and position tracking
         self.workflow = workflow
-        self.previous_position = 0.0
+        self.current_position = 0.0
 
-    def _propagate_to_position(self, position: float) -> None:
-        """Propagate to absolute position.
-
+    def propagate(self, target_position: float) -> None:
+        """Propagate wavefront to specified position.
+        
         Args:
-            position: Target position
+            target_position: Absolute position to propagate to
         """
-        distance = position - self.previous_position
-        self.wavefront = self.propagator.propagate(
-            self.wavefront, 
-            distance=distance
-        )
-        self.previous_position = position
+        distance = target_position - self.current_position
+        self.wavefront = self.propagator.propagate(self.wavefront, distance=distance)
+        self.current_position = target_position
 
-    def _process_wavefront(self) -> None:
-        """Initialize wavefront position."""
-        for stage in self.workflow:
-            if stage["component_id"] == self.wavefront.id:
-                self._propagate_to_position(
-                    stage["geometry"]["position"]
-                )
-                return
-
-    def _process_elements(self) -> None:
-        """Process element interactions."""
-        for stage in self.workflow:
-            if stage["component_id"] in self.elements:
-                element = self.elements[stage["component_id"]]
-                self._propagate_to_position(
-                    stage["geometry"]["position"]
-                )
-                self.interactor.apply_interaction(element)
-
-    def _process_detector(self) -> None:
-        """Record detector measurements."""
-        for stage in self.workflow:
-            if stage["component_id"] == self.detector.id:
-                self._propagate_to_position(
-                    stage["geometry"]["position"]
-                )
-                self.detector.record_intensity(
-                    self.wavefront.amplitude
-                )
-                return
+    def process_stage(self, stage: Dict) -> None:
+        """Process a single workflow stage.
+        
+        Args:
+            stage: Workflow stage configuration
+        """
+        component_id = stage["component_id"]
+        position = stage["geometry"]["position"]
+        
+        # Move to component position
+        self.propagate(position)
+        
+        # Handle component interaction
+        if component_id in self.elements:
+            element = self.elements[component_id]
+            self.wavefront = self.interactor.apply_interaction(self.wavefront, element)
+        elif component_id == self.detector.id:
+            self.detector.record_intensity(self.wavefront.amplitude)
 
     def run(self) -> None:
-        """Execute simulation workflow.
-
-        Raises:
-            KeyError: Unknown component in workflow
-        """
-        self._process_wavefront()
-        self._process_elements()
-        self._process_detector()
+        """Execute complete simulation workflow."""
+        for stage in self.workflow:
+            self.process_stage(stage)
 
     def get_results(self) -> List[Dict]:
-        """Get simulation results.
-
+        """Retrieve simulation results.
+        
         Returns:
-            Detector measurements
+            List of detector measurements
         """
         return self.detector.acquire_images()

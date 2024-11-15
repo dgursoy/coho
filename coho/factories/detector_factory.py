@@ -16,12 +16,11 @@ DETECTOR_TYPES:
     DETECTOR_TYPES: Mapping of type names to classes
 """
 
-from typing import Dict, Any
 from ..core.detector import (
-    Detector,
     PhotonCountingDetector, 
     IntegratingDetector
 )
+from .base_factory import ComponentFactory
 
 
 DETECTOR_TYPES = {
@@ -30,37 +29,8 @@ DETECTOR_TYPES = {
 }
 
 
-class DetectorFactory:
-    """Factory for detector instance creation."""
+class DetectorFactory(ComponentFactory):
+    """Factory for detector creation."""
     
-    @staticmethod
-    def create_detector(
-        id: Any, 
-        type: str, 
-        parameters: Dict[str, Any]
-    ) -> Detector:
-        """Create configured detector instance.
-
-        Args:
-            id: Unique identifier
-            type: Detector type
-                'photon_counting': Discrete detection
-                'integrating': Continuous measurement
-            parameters: Configuration dictionary
-
-        Returns:
-            Configured detector instance
-
-        Raises:
-            ValueError: Unknown detector type
-        """
-        detector_type = type.lower()
-        detector_class = DETECTOR_TYPES.get(detector_type)
-        
-        if detector_class is None:
-            raise ValueError(
-                f"Unknown detector type: {type}. "
-                f"Supported types: {list(DETECTOR_TYPES.keys())}"
-            )
-            
-        return detector_class(id, parameters)
+    def __init__(self):
+        super().__init__(DETECTOR_TYPES)

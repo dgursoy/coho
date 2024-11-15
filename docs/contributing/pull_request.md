@@ -51,16 +51,33 @@ Submit your PR and wait for it to be reviewed.
 >    ```bash
 >    git checkout -b feature/your-feature-name  # Use descriptive branch names
 >    ```
-> 2. Make changes and commit:
+>
+> 2. Stage changes and commit:
 >    ```bash
+>    git add .
 >    git commit -m "[TYPE] Brief description"  # Be clear and concise
 >    ```
+>
 > 3. Push and set upstream:
 >    ```bash
 >    git push -u origin feature/your-feature-name  # -u links local and remote branches
 >    ```
+>
 > 4. Open PR on [Coho repository](https://github.com/dgursoy/coho)
+>
 > 5. Add title, description, and related issues
+>
+> 6. (optional) Clean up branches after merge:
+>    ```bash
+>    # Delete local branch
+>    git branch -d feature/your-feature-name
+>
+>    # Delete remote branch
+>    git push origin --delete feature/your-feature-name
+>
+>    # Clean up stale remote references
+>    git fetch --prune
+>    ```
 
 ## Review Process
 

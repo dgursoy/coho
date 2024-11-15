@@ -12,15 +12,6 @@ Coho is a Python-based platform designed for simulating coded holography experim
 
 Check out our [documentation](https://dgursoy.github.io/coho/).
 
-## Want to try it out?
-
-See our [installation guide](docs/installation.md) to get started and [quick start](docs/quickstart.md) with basic examples.
-
-## Getting Help
-
-* Visit our [GitHub repository](https://github.com/dgursoy/coho)
-* Report issues on our [Issue Tracker](https://github.com/dgursoy/coho/issues)
-
 ## Future Development
 
 Coho is under active development. Planned features include:

@@ -9,7 +9,8 @@ using factory-based architecture.
 Modules:
     factories: Component creation and configuration
         wavefront: Wavefront profiles
-        element: Optical elements
+        optic: Optical components
+        sample: Light-sensitive materials
         detector: Measurement devices
         propagator: Propagation methods
         interactor: Wave-element interactions
@@ -17,7 +18,8 @@ Modules:
     core: Core simulation components
         engine: Simulation orchestration
         wavefront: Wavefront definitions
-        element: Element definitions
+        optic: Optical components
+        sample: Light-sensitive materials
         detector: Detector definitions
         propagator: Propagator definitions
         interactor: Interaction definitions
@@ -28,14 +30,20 @@ Modules:
 """
 
 # Factories
-from .factories.wavefront_factory import WavefrontFactory
-from .factories.element_factory import ElementFactory
-from .factories.detector_factory import DetectorFactory
-from .factories.propagator_factory import PropagatorFactory
-from .factories.interactor_factory import InteractorFactory
+from .factories.simulation_factories import (
+    WavefrontFactory,
+    OpticFactory,
+    SampleFactory,
+    DetectorFactory
+)
+from .factories.operator_factories import (
+    PropagatorFactory,
+    InteractorFactory
+)
+from .factories.experiment_factories import ExperimentFactory
 
 # Core
-from .engine import Simulation
+from .engine.simulation import Simulation
 
 # Config
 from .config.manager import load_simulation_config
@@ -43,11 +51,13 @@ from .config.parser import build_simulation_from_config
 
 __all__ = [
     'WavefrontFactory',
-    'ElementFactory',
+    'OpticFactory',
+    'SampleFactory',
     'DetectorFactory',
     'PropagatorFactory',
     'InteractorFactory',
-    'Simulation',
+    'ExperimentFactory',
+    'Engine',
     'load_simulation_config',
     'build_simulation_from_config'
 ]

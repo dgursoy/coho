@@ -1,4 +1,4 @@
-# core/wavefront.py
+# core/simulation/wavefront.py
 
 """Classes for representing optical wavefront states.
 

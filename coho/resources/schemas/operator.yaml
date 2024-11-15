@@ -1,0 +1,43 @@
+operator:
+  type: dict
+  required: true
+  schema:
+    interactor:
+      type: dict
+      required: true
+      schema:
+        id:
+          type: string
+          required: false
+        type:
+          type: string
+          required: true
+          allowed: ["thin_object", "thick_object"]
+        properties:
+          type: dict
+          required: true
+          default: {}
+          schema:
+            parameters:
+              type: dict
+              required: false
+
+    propagator:
+      type: dict
+      required: true
+      schema:
+        id:
+          type: string
+          required: false
+        type:
+          type: string
+          required: true
+          allowed: ["fresnel", "fraunhofer"]
+        properties:
+          type: dict
+          required: true
+          default: {}
+          schema:
+            parameters:
+              type: dict
+              required: false

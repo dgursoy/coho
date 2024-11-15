@@ -1,37 +1,55 @@
-# factories/__init__.py
+"""Factory components for coho.
 
-"""Factories for simulation component creation.
-
-This package provides factory classes for initializing
-and configuring optical components.
+This package provides factories for creating simulation, operator,
+optimization and experiment components.
 
 Modules:
-    element: Optical elements
-        lenses, mirrors, apertures
+    base_factory: Abstract base factory implementation
+    simulation_factories: Physical components
+        detector: Measurement devices
+        optic: Optical components
+        sample: Light-sensitive materials
+        wavefront: Light field profiles
 
-    detector: Measurement devices
-        intensity, photon counting
+    operator_factories: Forward & adjoint operators
+        propagator: Field propagation methods
+        interactor: Wave-object interactions
 
-    propagator: Propagation methods
-        fresnel, fraunhofer
+    optimization_factories: Optimization tools
+        solver: Optimization algorithms
+        objective: Cost functions
 
-    wavefront: Initial profiles
-        constant, gaussian, rectangular
-
-    interactor: Wave-object interactions
-        thin, thick objects
+    experiment_factories: High-level templates
+        holography: Holographic imaging
 """
 
-from .element_factory import ElementFactory
-from .detector_factory import DetectorFactory
-from .propagator_factory import PropagatorFactory
-from .wavefront_factory import WavefrontFactory
-from .interactor_factory import InteractorFactory
+from .base_factory import ComponentFactory
+from .simulation_factories import (
+    DetectorFactory,
+    OpticFactory,
+    SampleFactory,
+    WavefrontFactory
+)
+from .operator_factories import (
+    PropagatorFactory,
+    InteractorFactory
+)
+from .optimization_factories import (
+    SolverFactory,
+    ObjectiveFactory
+)
+from .experiment_factories import ExperimentFactory
 
 __all__ = [
-    'ElementFactory',
-    'DetectorFactory',
-    'PropagatorFactory',
+    'ComponentFactory',
+    'DetectorFactory', 
+    'OpticFactory',
+    'SampleFactory',
     'WavefrontFactory',
-    'InteractorFactory'
+    'PropagatorFactory',
+    'InteractorFactory',
+    'GradientFactory',
+    'SolverFactory',
+    'ObjectiveFactory',
+    'ExperimentFactory'
 ]

@@ -1,105 +1,35 @@
-# core/element.py
+# core/simulation/optic.py
 
 """
-Optical element classes for wavefront manipulation.
+Optic classes for wavefront manipulation.
 
-This module provides elements that modify wavefronts through transmission
+This module provides optics that modify wavefronts through transmission
 and phase effects based on material properties and geometric patterns.
 
 Classes:
-    Element: Abstract base class for optical elements
-    CodedApertureElement: Binary coded aperture with random patterns
-    SlitApertureElement: Rectangular slit aperture
-    CircleApertureElement: Circular aperture
-    CustomProfileElement: Element with arbitrary transmission profile
-
-Methods:
-    generate_pattern: Create element-specific patterns
-    apply_rotation: Rotate pattern by specified angle
-
-Constants:
-    MATERIAL_PARAMS: Default material properties
-    PATTERN_PARAMS: Default pattern generation settings
-    CODED_PARAMS: Coded aperture defaults
-    SLIT_PARAMS: Slit aperture defaults
-    CIRCLE_PARAMS: Circle aperture defaults
+    Optic: Abstract base class for optics
+    CodedApertureOptic: Binary coded aperture with random patterns
+    SlitApertureOptic: Rectangular slit aperture
+    CircleApertureOptic: Circular aperture
+    CustomProfileOptic: Optic with arbitrary transmission profile
 """
 
-from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, Tuple
-from scipy.ndimage import rotate
+from typing import Dict, Any
 import numpy as np
+from .element import Element, PATTERN_PARAMS
 
-
-# Default parameters
-MATERIAL_PARAMS: Dict[str, Any] = {
-    "MATERIAL": "Au",      # Element material
-    "DENSITY": 19.32,      # g/cm³
-    "THICKNESS": 0.01,     # cm
-}
-
-PATTERN_PARAMS: Dict[str, Any] = {
-    "RESOLUTION": 512,     # pixels
-    "ROTATION": 0,         # degrees
-}
-
+# Optic-specific parameters
 CODED_PARAMS: Dict[str, Any] = {"BIT_SIZE": 8}
 SLIT_PARAMS: Dict[str, Any] = {"WIDTH": 256, "HEIGHT": 256}
 CIRCLE_PARAMS: Dict[str, Any] = {"RADIUS": 128}
 
 
-class Element(ABC):
+class Optic(Element):
     """Base class for optical elements."""
-
-    def __init__(self, id: Any, parameters: Optional[Dict[str, Any]] = None) -> None:
-        """Initialize element.
-
-        Args:
-            id: Unique identifier
-            parameters: Configuration dict
-        """
-        self.id = id
-        params = parameters or {}
-        
-        # Physical properties
-        self.material = params.get("material", MATERIAL_PARAMS["MATERIAL"])
-        self.thickness = params.get("thickness", MATERIAL_PARAMS["THICKNESS"])
-        self.density = params.get("density", MATERIAL_PARAMS["DENSITY"])
-        
-        # Generate transmission pattern
-        self.pattern = self.generate_pattern(params)
-
-    @property
-    def shape(self) -> Tuple[int, int]:
-        """Get pattern dimensions."""
-        return self.pattern.shape
-
-    @abstractmethod
-    def generate_pattern(self, parameters: Dict[str, Any]) -> np.ndarray:
-        """Generate element pattern.
-
-        Args:
-            parameters: Pattern settings
-
-        Returns:
-            Pattern array
-        """
-        pass
-
-    def apply_rotation(self, pattern: np.ndarray, angle: float) -> np.ndarray:
-        """Rotate pattern.
-
-        Args:
-            pattern: Input pattern
-            angle: Rotation degrees
-
-        Returns:
-            Rotated pattern
-        """
-        return rotate(pattern, angle, reshape=False, order=1, mode='nearest')
+    pass
 
 
-class CodedApertureElement(Element):
+class CodedApertureOptic(Optic):
     """Binary coded aperture pattern."""
 
     def generate_pattern(self, parameters: Dict[str, Any]) -> np.ndarray:
@@ -132,7 +62,7 @@ class CodedApertureElement(Element):
         return self.apply_rotation(pattern.astype(float), rotation)
 
 
-class SlitApertureElement(Element):
+class SlitApertureOptic(Optic):
     """Rectangular slit aperture."""
 
     def generate_pattern(self, parameters: Dict[str, Any]) -> np.ndarray:
@@ -163,7 +93,7 @@ class SlitApertureElement(Element):
         return self.apply_rotation(pattern, rotation)
 
 
-class CircleApertureElement(Element):
+class CircleApertureOptic(Optic):
     """Circular aperture."""
 
     def generate_pattern(self, parameters: Dict[str, Any]) -> np.ndarray:
@@ -193,7 +123,7 @@ class CircleApertureElement(Element):
         return self.apply_rotation(pattern, rotation)
 
 
-class CustomProfileElement(Element):
+class CustomProfileOptic(Optic):
     """Custom transmission profile."""
 
     def generate_pattern(self, parameters: Dict[str, Any]) -> np.ndarray:

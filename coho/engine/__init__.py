@@ -4,6 +4,6 @@ Module:
     simulation: Wavefront propagation orchestration
 """
 
-from .simulation import Simulation
+from ..engine.simulation import Simulation
 
 __all__ = ['Simulation']

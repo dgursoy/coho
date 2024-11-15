@@ -1,4 +1,4 @@
-# core/interactor.py
+# core/operator/interactor.py
 
 """Classes for simulating wavefront interactions with optical elements.
 
@@ -24,8 +24,8 @@ from abc import ABC, abstractmethod
 from typing import Any, Optional, Dict
 import numpy as np
 import xraylib
-from coho.core.wavefront import Wavefront
-from coho.core.element import Element
+from coho.core.simulation.wavefront import Wavefront
+from coho.core.simulation.element import Element
 
 
 class Interactor(ABC):

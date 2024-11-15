@@ -1,4 +1,4 @@
-# core/propagator.py
+# core/operator/propagator.py
 
 """Classes for wavefront propagation in optical simulations.
 
@@ -19,7 +19,7 @@ Methods:
 from typing import Optional, Dict, Any  
 import numpy as np
 from abc import ABC, abstractmethod
-from .wavefront import Wavefront
+from coho.core.simulation.wavefront import Wavefront
 
 
 class Propagator(ABC):

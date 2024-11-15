@@ -1,9 +1,0 @@
-interactor:
-  type: dict
-  schema:
-    id: {required: False}
-    type: {type: string, allowed: ["thin_object", "thick_object"], required: True}
-    properties:
-      type: dict
-      schema:
-        parameters: {type: dict, required: False}

@@ -1,12 +1,13 @@
-# engine/simulation.py
+# engine/workflow.py
 
-"""Core engine for simulation orchestration.
+"""Core engine for experiment orchestration.
 
-This module handles the orchestration of simulations, including
-wavefront propagation, element interactions and measurement
+This module handles the orchestration of experiments, including
+wavefront propagation, element interactions, measurement and
+reconstruction.
 
 Classes:
-    Simulation: Orchestrates simulation workflow
+    Engine: Orchestrates experiment workflow
 
 Workflow Stages:
     1. Wavefront initialization
@@ -16,24 +17,26 @@ Workflow Stages:
 
 from typing import List, Dict
 from ..core.simulation.wavefront import Wavefront
-from ..core.simulation.optic import Optic
-from ..core.simulation.sample import Sample
+from ..core.simulation.sample import Element
 from ..core.simulation.detector import Detector
 from ..core.operator.propagator import Propagator
 from ..core.operator.interactor import Interactor
+from ..core.optimization.objectives import Objective
+from ..core.optimization.solvers import Solver
 
 
-class Simulation:
+class Engine:
     """Orchestrates experiment workflow."""
 
     def __init__(
         self, 
         wavefront: Wavefront, 
         propagator: Propagator,
-        optic: Optic, 
-        sample: Sample,
+        elements: List[Element], 
         detector: Detector,
-        interactor: Interactor,
+        interactor: Interactor, 
+        objective: Objective,
+        solver: Solver,
         workflow: List[Dict]
     ) -> None:
         """Initialize engine components and workflow.
@@ -41,10 +44,11 @@ class Simulation:
         Args:
             wavefront: Initial field
             propagator: Propagation method
-            optic: Optical element
-            sample: Sample
+            elements: List of optical elements
             detector: Measurement device
             interactor: Interaction handler
+            objective: Optimization objective
+            solver: Optimization solver
             workflow: Component sequence:
                 [{"component_id": str, 
                   "geometry": {"position": float}}, 
@@ -55,8 +59,11 @@ class Simulation:
         self.propagator = propagator
         self.detector = detector
         self.interactor = interactor
-        self.optic = optic
-        self.sample = sample
+        self.objective = objective
+        self.solver = solver
+        
+        # Create element lookup by ID
+        self.elements = {element.id: element for element in elements}
         
         # Workflow and position tracking
         self.workflow = workflow
@@ -84,24 +91,53 @@ class Simulation:
         # Move to component position
         self.propagate(position)
         
-        # Handle component interaction based on component ID matching
-        if component_id == self.optic.id:
-            self.wavefront = self.interactor.apply_interaction(self.wavefront, self.optic)
-        elif component_id == self.sample.id:
-            self.wavefront = self.interactor.apply_interaction(self.wavefront, self.sample)
+        # Handle component interaction
+        if component_id in self.elements:
+            element = self.elements[component_id]
+            self.wavefront = self.interactor.apply_interaction(self.wavefront, element)
         elif component_id == self.detector.id:
             self.detector.record_intensity(self.wavefront.amplitude)
-        # Skip wavefront component as it's the initial state
 
-    def run(self) -> None:
+    def simulate(self) -> None:
         """Execute complete simulation workflow."""
         for stage in self.workflow:
             self.process_stage(stage)
 
-    def get_results(self) -> List[Dict]:
+    def optimize(self, target_data: Dict) -> Dict:
+        """Run optimization loop to match simulation with target data.
+        
+        Args:
+            target_data: Reference measurements to optimize against
+            
+        Returns:
+            Dict containing optimization results and recovered parameters
+        """
+        # Initialize detector with target data
+        self.detector.set_target(target_data)
+        
+        # Run optimization loop
+        result = self.solver.solve(self.objective)
+        
+        # Run final simulation with optimized parameters
+        self.run()
+        
+        return {
+            'parameters': result,
+            'reconstruction': self.get_optimization_results()
+        }
+
+    def get_simulation_results(self) -> List[Dict]:
         """Retrieve simulation results.
         
         Returns:
             List of detector measurements
         """
         return self.detector.acquire_images()
+    
+    def get_optimization_results(self) -> Dict:
+        """Retrieve optimization results.
+        
+        Returns:
+            Dict containing optimization results and recovered parameters
+        """
+        return self.optimize()

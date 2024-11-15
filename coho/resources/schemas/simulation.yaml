@@ -1,0 +1,86 @@
+simulation:
+  type: dict
+  required: true
+  schema:
+    wavefront:
+      type: dict
+      required: true
+      schema:
+        id:
+          type: string
+          required: true
+        type:
+          type: string
+          required: true
+          allowed: ["constant", "gaussian", "rectangular"]
+        properties:
+          type: dict
+          required: true
+          schema:
+            amplitude: {type: float, min: 0.0, required: true}
+            phase: {type: float, required: true}
+            energy: {type: float, min: 0.0, required: true}
+            shape: {type: integer, min: 1, required: true}
+            spacing: {type: float, min: 0.0, required: true}
+            sigma: {type: float, min: 0.0, required: false}
+            width: {type: float, min: 0.0, required: false}
+            height: {type: float, min: 0.0, required: false}
+
+    optic:
+      type: dict
+      schema:
+        id:
+          type: string
+          required: true
+        type:
+          type: string
+          required: true
+          allowed: ["coded_aperture", "slit_aperture", "circle_aperture", "custom_profile"]
+        properties:
+          type: dict
+          required: true
+          schema:
+            material: {type: string, required: true}
+            density: {type: float, min: 0.0, required: true}
+            thickness: {type: float, min: 0.0, required: true}
+            bit_size: {type: integer, min: 1, required: false}
+            custom_profile: {type: string, required: false}
+            seed: {type: integer, required: false}
+
+    sample:
+      type: dict
+      schema:
+        id:
+          type: string
+          required: true
+        type:
+          type: string
+          required: true
+          allowed: ["custom_profile"]
+        properties:
+          type: dict
+          required: true
+          schema:
+            material: {type: string, required: true}
+            density: {type: float, min: 0.0, required: true}
+            thickness: {type: float, min: 0.0, required: true}
+            custom_profile: {type: string, required: false}
+
+    detector:
+      type: dict
+      required: true
+      schema:
+        id:
+          type: string
+          required: true
+        type:
+          type: string
+          required: true
+          allowed: ["integrating", "photon_counting"]
+        properties:
+          type: dict
+          required: true
+          schema:
+            parameters:
+              type: dict
+              required: false

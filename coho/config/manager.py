@@ -13,7 +13,8 @@ Functions:
 Components validated:
     workflow: Simulation workflow settings
     wavefront: Initial wavefront parameters
-    elements: Optical element configurations
+    optic: Optical element configurations
+    sample: Sample configurations
     propagator: Propagation method settings
     detector: Detector specifications
     interactor: Interaction configurations
@@ -31,13 +32,12 @@ from .loader import load_config
 # Define paths to individual schema files
 SCHEMA_DIR = Path(__file__).resolve().parent.parent / 'resources/schemas'
 SCHEMA_PATHS = {
-    'workflow': SCHEMA_DIR / 'workflow.yaml',
-    'wavefront': SCHEMA_DIR / 'wavefront.yaml',
-    'elements': SCHEMA_DIR / 'elements.yaml',
-    'propagator': SCHEMA_DIR / 'propagator.yaml',
-    'detector': SCHEMA_DIR / 'detector.yaml',
-    'interactor': SCHEMA_DIR / 'interactor.yaml'
+    'operator': SCHEMA_DIR / 'operator.yaml',
+    'optimization': SCHEMA_DIR / 'optimization.yaml',
+    'simulation': SCHEMA_DIR / 'simulation.yaml',
+    'experiment': SCHEMA_DIR / 'experiment.yaml'
 }
+
 
 def load_schema(schema_path: Path) -> Dict:
     """Load a single schema file.

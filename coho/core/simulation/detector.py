@@ -1,4 +1,4 @@
-# core/detector.py
+# core/simulation/detector.py
 
 """Optical detector implementations.
 

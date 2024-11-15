@@ -2,70 +2,80 @@
 
 """Core components for optical simulation.
 
-This package provides classes for light propagation,
-interaction, and detection.
+This package provides base classes and implementations for simulation,
+operators, optimization and experiments.
 
 Modules:
-    wavefront: Light field representations
-        constant: Uniform profile
-        gaussian: Gaussian profile
-        rectangular: Rectangular profile
+    simulation: Physical components
+        detector: Measurement devices
+        element: Optical elements
+        wavefront: Light field profiles
 
-    element: Optical elements
-        coded_aperture: Pattern masks
-        slit_aperture: Slit openings
-        circle_aperture: Circular openings
-        custom_profile: User patterns
+    operator: Forward & adjoint operators
+        propagator: Field propagation methods
+        interactor: Wave-object interactions
 
-    propagator: Field propagation
-        fresnel: Near-field
-        fraunhofer: Far-field
+    optimization: Optimization tools
+        solver: Optimization algorithms
+        objective: Cost functions
 
-    interactor: Wave-element interaction
-        thin_object: Surface effects
-        thick_object: Volume effects
-
-    detector: Measurement devices
-        integrating: Intensity
-        photon_counting: Discrete photons
+    experiment: High-level templates
+        phase_retrieval: Phase recovery
+        holography: Holographic imaging
+        tomography: Tomographic reconstruction
 """
 
-from .detector import (
+from .simulation import (
     IntegratingDetector,
-    PhotonCountingDetector
-)
-from .element import (
-    CodedApertureElement,
-    SlitApertureElement,
-    CircleApertureElement,
-    CustomProfileElement
-)
-from .interactor import (
-    ThinObjectInteractor,
-    ThickObjectInteractor
-)
-from .propagator import (
-    FresnelPropagator,
-    FraunhoferPropagator
-)
-from .wavefront import (
+    PhotonCountingDetector,
+    CodedApertureOptic,
+    SlitApertureOptic,
+    CircleApertureOptic,
+    CustomProfileOptic,
+    CustomProfileSample,
     ConstantWavefront,
     GaussianWavefront,
     RectangularWavefront
 )
-
-__all__ = (
-    "IntegratingDetector",
-    "PhotonCountingDetector",
-    "CodedApertureElement",
-    "SlitApertureElement",
-    "CircleApertureElement",
-    "CustomProfileElement",
-    "ThinObjectInteractor",
-    "ThickObjectInteractor",
-    "FresnelPropagator",
-    "FraunhoferPropagator",
-    "ConstantWavefront",
-    "GaussianWavefront",
-    "RectangularWavefront"
+from .operator import (
+    FresnelPropagator,
+    FraunhoferPropagator,
+    ThinObjectInteractor,
+    ThickObjectInteractor
 )
+from .optimization import (
+    GradientDescent,
+    LeastSquares,
+)
+from .experiment import (
+    Holography,
+    Tomography
+)
+
+__all__ = [
+    # Simulation
+    'IntegratingDetector',
+    'PhotonCountingDetector',
+    'CodedApertureOptic',
+    'SlitApertureOptic', 
+    'CircleApertureOptic',
+    'CustomProfileOptic',
+    'CustomProfileSample',
+    'ConstantWavefront',
+    'GaussianWavefront',
+    'RectangularWavefront',
+    
+    # Operators
+    'FresnelPropagator',
+    'FraunhoferPropagator',
+    'ThinObjectInteractor',
+    'ThickObjectInteractor',
+    
+    # Optimization
+    'GradientDescent',
+    'LeastSquares',
+    
+    # Experiments
+    'Holography',
+    'Tomography'
+]

@@ -19,5 +19,3 @@ Coho is under active development. Planned features include:
 * PyTorch integration for enhanced tensor operations and deep learning capabilities
 * GPU acceleration support for faster computations
 * Additional optimization methods and reconstruction algorithms
-
-Want to contribute? Check out our [contribution guidelines](docs/contributing/index.md).

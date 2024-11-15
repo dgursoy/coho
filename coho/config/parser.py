@@ -1,158 +1,128 @@
 # config/parser.py
 
-"""Component creation and simulation assembly.
+"""Configuration parser for simulation components.
 
-This module converts configuration files into initialized
-simulation components using factory patterns.
+This module handles component creation and configuration through factory pattern.
+Each component is initialized with unique ID and type-specific properties.
 
 Classes:
-    IdGenerator: Create unique IDs for components
+    IdGenerator: Generates unique IDs for components
 
 Functions:
-    create_standard_component: Create basic components
-    parse_elements: Create optical element set
-    parse_config: Create all simulation components
-    build_simulation_from_config: Create simulation from file
+    parse_components: Create multiple components of specified type
+    parse_config: Create all simulation components from config
+    build_simulation_from_config: Build simulation from YAML config file
 
-Dependencies:
-    factories:
-        WavefrontFactory: Create wavefront profiles
-        DetectorFactory: Create detector instances
-        ElementFactory: Create optical elements
-        PropagatorFactory: Create propagation methods
-        InteractorFactory: Create interaction handlers
+Registry:
+    FACTORIES: Mapping of component types to their factory instances
 """
 
-from typing import List, Dict, Any, Optional
-from .manager import load_simulation_config
-from ..factories import (
-    WavefrontFactory,
-    DetectorFactory, 
-    ElementFactory,
-    PropagatorFactory, 
-    InteractorFactory
-)
+from typing import Any, Dict, List, Optional
+
+from ..config.manager import load_simulation_config
 from ..engine.simulation import Simulation
+from ..factories.detector_factory import DetectorFactory
+from ..factories.element_factory import ElementFactory
+from ..factories.interactor_factory import InteractorFactory
+from ..factories.propagator_factory import PropagatorFactory
+from ..factories.wavefront_factory import WavefrontFactory
+
+
+FACTORIES = {
+    "detector": DetectorFactory(),
+    "elements": ElementFactory(),
+    "interactor": InteractorFactory(),
+    "propagator": PropagatorFactory(),
+    "wavefront": WavefrontFactory(),
+}
 
 
 class IdGenerator:
-    """Manages unique ID generation for components."""
-    
+    """Generates unique IDs for simulation components."""
+
     def __init__(self):
-        self.used_ids = set()
+        """Initialize with empty counter dictionary."""
+        self.counters: Dict[str, int] = {}
+
+    def generate_id(self, component_type: str, custom_id: Optional[Any] = None) -> str:
+        """Generate unique ID for component."""
+        if custom_id is not None:
+            return str(custom_id)
+
+        if component_type not in self.counters:
+            self.counters[component_type] = 0
+
+        self.counters[component_type] += 1
+        return f"{component_type}_{self.counters[component_type]}"
+
+
+def parse_components(
+    configs: List[Dict[str, Any]], 
+    component_type: str, 
+    id_gen: IdGenerator
+) -> List[Any]:
+    """Create multiple components of specified type.
     
-    def generate_id(self, base: str, config_id: str = None) -> str:
-        """Generate unique component ID.
-
-        Args:
-            base: Base name for component type
-            config_id: Optional ID from config
-
-        Returns:
-            Unique ID string
-        """
-        # Use config ID if provided and unique
-        if config_id and config_id not in self.used_ids:
-            self.used_ids.add(config_id)
-            return config_id
-            
-        # Generate new unique ID
-        counter = 1
-        while True:
-            new_id = f"{base}_{counter}"
-            if new_id not in self.used_ids:
-                self.used_ids.add(new_id)
-                return new_id
-            counter += 1
-
-
-def parse_component(config: Dict[str, Any], component_type: str, id_gen: IdGenerator, **kwargs) -> Any:
-    """Create single component from config.
-
     Args:
-        config: Component configuration
-        component_type: Type of component to create
-        id_gen: ID generator instance
-        **kwargs: Additional factory arguments
+        configs: List of component configurations
+        component_type: Type of components to create
+        id_gen: ID generator for component identification
 
     Returns:
-        Initialized component
+        List of initialized components
+
+    Raises:
+        ValueError: If component type is not supported
     """
-    # Generate unique ID
-    component_id = id_gen.generate_id(component_type, config.get("id"))
-    properties = config.get("properties", {})
-    
-    # Select factory and handle special cases
-    if component_type == "interactor":
-        return InteractorFactory.create_interactor(
-            component_id, 
-            config["type"], 
-            kwargs["wavefront"]  # Direct wavefront argument
-        )
-    
-    # Handle standard factories
-    factories = {
-        "wavefront": WavefrontFactory.create_wavefront,
-        "propagator": PropagatorFactory.create_propagator,
-        "detector": DetectorFactory.create_detector,
-    }
-    
-    factory = factories.get(component_type)
+    factory = FACTORIES.get(component_type)
+    print (component_type)
     if not factory:
         raise ValueError(f"Unknown component type: {component_type}")
 
-    return factory(component_id, config["type"], properties)
-
-
-def parse_elements(configs: List[Dict[str, Any]], id_gen: IdGenerator) -> List[Any]:
-    """Create multiple optical elements."""
-    elements = []
+    components = []
     for config in configs:
-        element_id = id_gen.generate_id("element", config.get("id"))
+        component_id = id_gen.generate_id(component_type, config.get("id"))
         properties = config.get("properties", {})
-        element = ElementFactory.create_element(
-            element_id, 
-            config["type"],
-            properties
-        )
-        elements.append(element)
-    return elements
+        component = factory.create(component_id, config["type"], properties)
+        components.append(component)
+        
+    return components
 
 
 def parse_config(config: Dict[str, Any]) -> Dict[str, Any]:
-    """Create all simulation components."""
-    # Initialize ID generator
+    """Create all simulation components from config dictionary."""
     id_gen = IdGenerator()
     
-    # Create components in dependency order
-    wavefront = parse_component(config["wavefront"], "wavefront", id_gen)
-    interactor = parse_component(
-        config["interactor"], 
-        "interactor", 
-        id_gen,
-        wavefront=wavefront
-    )
-    propagator = parse_component(config["propagator"], "propagator", id_gen)
-    elements = parse_elements(config["elements"], id_gen)
-    detector = parse_component(config["detector"], "detector", id_gen)
-
-    return {
-        "wavefront": wavefront,
-        "propagator": propagator,
-        "elements": elements,
-        "detector": detector,
-        "interactor": interactor,
-        "workflow": config["workflow"]
+    # Ensure single components are in list format
+    component_configs = {
+        "wavefront": [config["wavefront"]],
+        "propagator": [config["propagator"]],
+        "elements": config["elements"],
+        "detector": [config["detector"]],
+        "interactor": [config["interactor"]]
     }
+    
+    # Create all components using the same parser
+    components = {
+        name: parse_components(configs, name, id_gen)[0] if name != "elements" 
+        else parse_components(configs, name, id_gen)
+        for name, configs in component_configs.items()
+    }
+    
+    # Add workflow configuration
+    components["workflow"] = config["workflow"]
+    
+    return components
+
 
 def build_simulation_from_config(config_path: str) -> Simulation:
-    """Create a Simulation instance from config file.
-
+    """Build simulation from YAML configuration file.
+    
     Args:
-        config_path: Path to configuration file.
-
+        config_path: Path to YAML configuration file
+        
     Returns:
-        Initialized simulation with all components.
+        Configured simulation instance
     """
     config = load_simulation_config(config_path)
     components = parse_config(config)

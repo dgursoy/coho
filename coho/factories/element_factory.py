@@ -18,14 +18,13 @@ ELEMENT_TYPES:
     ELEMENT_TYPES: Mapping of type names to classes
 """
 
-from typing import Dict, Any
 from ..core.element import (
-    Element,
     CodedApertureElement,
     SlitApertureElement,
     CircleApertureElement,
     CustomProfileElement
 )
+from .base_factory import ComponentFactory
 
 
 ELEMENT_TYPES = {
@@ -36,39 +35,9 @@ ELEMENT_TYPES = {
 }
 
 
-class ElementFactory:
-    """Factory for optical element creation."""
+class ElementFactory(ComponentFactory):
+    """Factory for element creation."""
     
-    @staticmethod
-    def create_element(
-        id: Any, 
-        type: str, 
-        parameters: Dict[str, Any]
-    ) -> Element:
-        """Create configured element instance.
+    def __init__(self):
+        super().__init__(ELEMENT_TYPES)
 
-        Args:
-            id: Unique identifier
-            type: Element type
-                'coded_aperture': Patterned transmission
-                'slit_aperture': Single slit
-                'circle_aperture': Circular opening
-                'custom_profile': User pattern
-            parameters: Configuration dictionary
-
-        Returns:
-            Configured element instance
-
-        Raises:
-            ValueError: Unknown element type
-        """
-        element_type = type.lower()
-        element_class = ELEMENT_TYPES.get(element_type)
-        
-        if element_class is None:
-            raise ValueError(
-                f"Unknown element type: {type}. "
-                f"Supported types: {list(ELEMENT_TYPES.keys())}"
-            )
-            
-        return element_class(id, parameters)

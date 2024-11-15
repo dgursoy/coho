@@ -16,12 +16,11 @@ PROPAGATOR_TYPES:
     PROPAGATOR_TYPES: Mapping of type names to classes
 """
 
-from typing import Dict, Any
 from ..core.propagator import (
-    Propagator,
     FresnelPropagator, 
     FraunhoferPropagator
 )
+from .base_factory import ComponentFactory
 
 
 PROPAGATOR_TYPES = {
@@ -30,37 +29,8 @@ PROPAGATOR_TYPES = {
 }
 
 
-class PropagatorFactory:
+class PropagatorFactory(ComponentFactory):
     """Factory for propagator creation."""
     
-    @staticmethod
-    def create_propagator(
-        id: Any, 
-        type: str, 
-        parameters: Dict[str, Any]
-    ) -> Propagator:
-        """Create configured propagator instance.
-
-        Args:
-            id: Unique identifier
-            type: Propagator type
-                'fresnel': Near-field diffraction
-                'fraunhofer': Far-field diffraction
-            parameters: Configuration dictionary
-
-        Returns:
-            Configured propagator instance
-
-        Raises:
-            ValueError: Unknown propagator type
-        """
-        propagator_type = type.lower()
-        propagator_class = PROPAGATOR_TYPES.get(propagator_type)
-        
-        if propagator_class is None:
-            raise ValueError(
-                f"Unknown propagator type: {type}. "
-                f"Supported types: {list(PROPAGATOR_TYPES.keys())}"
-            )
-            
-        return propagator_class(id, parameters)
+    def __init__(self):
+        super().__init__(PROPAGATOR_TYPES)

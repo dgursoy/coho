@@ -18,17 +18,18 @@ simulation:
           required: true
           default: {}
           schema:
-            amplitude: {type: float, min: 0.0, required: true}
-            phase: {type: float, required: true}
-            energy: {type: float, min: 0.0, required: true}
-            shape: {type: integer, min: 1, required: true}
-            spacing: {type: float, min: 0.0, required: true}
-            sigma: {type: float, min: 0.0, required: false}
-            width: {type: float, min: 0.0, required: false}
+            amplitude: {type: float, min: 0.0, default: 1.0, required: true}
+            phase: {type: float, default: 0.0, required: true}
+            energy: {type: float, min: 0.0, default: 10.0, required: true}
+            shape: {type: integer, min: 1, default: 512, required: true}
+            spacing: {type: float, min: 0.0, default: 0.001, required: true}
+            sigma: {type: float, min: 0.0, default: 64, required: false}
+            width: {type: float, min: 0.0, default: 256, required: false}
             height: {type: float, min: 0.0, required: false}
 
     optic:
       type: dict
+      required: false
       schema:
         id:
           type: string
@@ -42,15 +43,19 @@ simulation:
           required: true
           default: {}
           schema:
-            material: {type: string, required: true}
-            density: {type: float, min: 0.0, required: true}
-            thickness: {type: float, min: 0.0, required: true}
-            bit_size: {type: integer, min: 1, required: false}
-            custom_profile: {type: string, required: false}
-            seed: {type: integer, required: false}
+            material: {type: string, default: "Au", required: true}
+            density: {type: float, min: 0.0, default: 19.3, required: true}
+            thickness: {type: float, min: 0.0, default: 0.0001, required: true}
+            bit_size: {type: integer, min: 1, default: 64, required: false}
+            width: {type: float, min: 0.0, default: 256, required: false}
+            height: {type: float, min: 0.0, default: 256, required: false}
+            radius: {type: float, min: 0.0, default: 128, required: false}
+            custom_profile: {type: string, default: "coho/resources/samples/cameraman.npy", required: false}
+            seed: {type: integer, default: 0, required: false}
 
     sample:
       type: dict
+      required: false
       schema:
         id:
           type: string
@@ -64,10 +69,10 @@ simulation:
           required: true
           default: {}
           schema:
-            material: {type: string, required: true}
-            density: {type: float, min: 0.0, required: true}
-            thickness: {type: float, min: 0.0, required: true}
-            custom_profile: {type: string, required: false}
+            material: {type: string, default: "C5H8O2", required: true}
+            density: {type: float, min: 0.0, default: 1.18, required: true}
+            thickness: {type: float, min: 0.0, default: 0.001, required: true}
+            custom_profile: {type: string, default: "coho/resources/samples/lena.npy", required: false}
 
     detector:
       type: dict

@@ -18,11 +18,6 @@ from typing import Dict, Any
 import numpy as np
 from .element import Element, PATTERN_PARAMS
 
-# Optic-specific parameters
-CODED_PARAMS: Dict[str, Any] = {"BIT_SIZE": 8}
-SLIT_PARAMS: Dict[str, Any] = {"WIDTH": 256, "HEIGHT": 256}
-CIRCLE_PARAMS: Dict[str, Any] = {"RADIUS": 128}
-
 
 class Optic(Element):
     """Base class for optical elements."""
@@ -46,7 +41,7 @@ class CodedApertureOptic(Optic):
             Binary pattern array
         """
         # Get parameters
-        bit_size = parameters.get("bit_size", CODED_PARAMS["BIT_SIZE"])
+        bit_size = parameters.get("bit_size")
         resolution = parameters.get("resolution", PATTERN_PARAMS["RESOLUTION"])
         rotation = parameters.get("rotation", PATTERN_PARAMS["ROTATION"])
         seed = parameters.get("seed")
@@ -79,8 +74,8 @@ class SlitApertureOptic(Optic):
             Slit pattern array
         """
         # Get parameters
-        width = parameters.get("width", SLIT_PARAMS["WIDTH"])
-        height = parameters.get("height", SLIT_PARAMS["HEIGHT"])
+        width = parameters.get("width")
+        height = parameters.get("height")
         resolution = parameters.get("resolution", PATTERN_PARAMS["RESOLUTION"])
         rotation = parameters.get("rotation", PATTERN_PARAMS["ROTATION"])
 
@@ -109,7 +104,7 @@ class CircleApertureOptic(Optic):
             Circle pattern array
         """
         # Get parameters
-        radius = parameters.get("radius", CIRCLE_PARAMS["RADIUS"])
+        radius = parameters.get("radius")
         resolution = parameters.get("resolution", PATTERN_PARAMS["RESOLUTION"])
         rotation = parameters.get("rotation", PATTERN_PARAMS["ROTATION"])
 

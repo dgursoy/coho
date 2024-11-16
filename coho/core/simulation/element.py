@@ -7,13 +7,6 @@ from typing import Optional, Dict, Any, Tuple
 from scipy.ndimage import rotate
 import numpy as np
 
-# Shared default parameters
-MATERIAL_PARAMS: Dict[str, Any] = {
-    "MATERIAL": "Au",      
-    "DENSITY": 19.32,      
-    "THICKNESS": 0.01,     
-}
-
 PATTERN_PARAMS: Dict[str, Any] = {
     "RESOLUTION": 512,     
     "ROTATION": 0,         
@@ -27,9 +20,9 @@ class Element(ABC):
         params = parameters or {}
         
         # Physical properties
-        self.material = params.get("material", MATERIAL_PARAMS["MATERIAL"])
-        self.thickness = params.get("thickness", MATERIAL_PARAMS["THICKNESS"])
-        self.density = params.get("density", MATERIAL_PARAMS["DENSITY"])
+        self.material = params.get("material")
+        self.thickness = params.get("thickness")
+        self.density = params.get("density")
         
         # Generate transmission pattern
         self.pattern = self.generate_pattern(params)

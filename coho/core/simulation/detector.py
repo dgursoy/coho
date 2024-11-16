@@ -17,22 +17,11 @@ Classes:
     PhotonCountingDetector: Discrete photon detector (planned)
         Methods:
             record_intensity: Not implemented
-
-Attributes:
-    DEFAULTS: Default detector parameters
 """
 
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any, List
 import numpy as np
-
-
-# Default parameters
-DEFAULTS = {
-    "resolution": 512,    # Grid points
-    "pixel_size": 0.001,  # cm
-    "position": 5.0       # cm
-}
 
 
 class Detector(ABC):
@@ -55,7 +44,7 @@ class Detector(ABC):
                 position: Z position (cm)
         """
         self.id = id
-        self.parameters = parameters or DEFAULTS.copy()
+        self.parameters = parameters
         self.images: List[np.ndarray] = []
 
     @abstractmethod

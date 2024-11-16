@@ -13,7 +13,6 @@ Classes:
 
 Constants:
     PHYSICAL_CONSTANTS: Fundamental physics constants
-    WAVEFRONT_DEFAULTS: Default wavefront parameters
 """
 
 from abc import ABC, abstractmethod
@@ -23,17 +22,6 @@ import numpy as np
 PHYSICAL_CONSTANTS = {
     'PLANCK_CONSTANT': 6.58211928e-19,  # keV*s
     'SPEED_OF_LIGHT': 299792458e+2,     # cm/s
-}
-
-WAVEFRONT_DEFAULTS = {
-    'AMPLITUDE': 1.0,   # amplitude
-    'PHASE': 0.0,       # radians
-    'ENERGY': 10.0,     # keV
-    'SHAPE': 512,       # pixels
-    'SPACING': 0.001,   # cm
-    'SIGMA': 64,        # pixels
-    'WIDTH': 256,       # pixels
-    'HEIGHT': 256,      # pixels
 }
 
 
@@ -54,9 +42,9 @@ class Wavefront(ABC):
         """
         parameters = parameters or {}
         self.id = id
-        self.energy = parameters.get('energy', WAVEFRONT_DEFAULTS['ENERGY'])
-        self.shape = parameters.get('shape', WAVEFRONT_DEFAULTS['SHAPE'])
-        self.spacing = parameters.get('spacing', WAVEFRONT_DEFAULTS['SPACING'])
+        self.energy = parameters.get('energy')
+        self.shape = parameters.get('shape')
+        self.spacing = parameters.get('spacing')
         
         self.amplitude = self.generate_amplitude(parameters)
         self.phase = self.generate_phase(parameters)
@@ -89,7 +77,7 @@ class Wavefront(ABC):
         Returns:
             Scaled amplitude array
         """
-        amplitude = parameters.get("amplitude", WAVEFRONT_DEFAULTS['AMPLITUDE'])
+        amplitude = parameters.get("amplitude")
         return self.generate_pattern(parameters) * amplitude
 
     def generate_phase(self, parameters: Dict[str, Any]) -> np.ndarray:
@@ -101,7 +89,7 @@ class Wavefront(ABC):
         Returns:
             Scaled phase array
         """
-        phase = parameters.get("phase", WAVEFRONT_DEFAULTS['PHASE'])
+        phase = parameters.get("phase")
         return self.generate_pattern(parameters) * phase
 
     @abstractmethod
@@ -129,7 +117,7 @@ class ConstantWavefront(Wavefront):
         Returns:
             Unit array
         """
-        shape = parameters.get("shape", WAVEFRONT_DEFAULTS['SHAPE'])
+        shape = parameters.get("shape")
         return np.ones((shape, shape))
 
 
@@ -147,8 +135,8 @@ class GaussianWavefront(Wavefront):
         Returns:
             Gaussian array
         """
-        sigma = parameters.get("sigma", WAVEFRONT_DEFAULTS['SIGMA'])
-        shape = parameters.get("shape", WAVEFRONT_DEFAULTS['SHAPE'])
+        sigma = parameters.get("sigma")
+        shape = parameters.get("shape")
 
         x = np.linspace(-shape/2, shape/2, shape)
         y = np.linspace(-shape/2, shape/2, shape)
@@ -171,9 +159,9 @@ class RectangularWavefront(Wavefront):
         Returns:
             Binary rectangle array
         """
-        shape = parameters.get("shape", WAVEFRONT_DEFAULTS['SHAPE'])
-        width = parameters.get("width", WAVEFRONT_DEFAULTS['WIDTH'])
-        height = parameters.get("height", WAVEFRONT_DEFAULTS['HEIGHT'])
+        shape = parameters.get("shape")
+        width = parameters.get("width")
+        height = parameters.get("height")
 
         pattern = np.zeros((shape, shape))
         x_start = (shape - width) // 2

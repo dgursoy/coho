@@ -19,11 +19,6 @@ optimization:
           type: dict
           required: true
           default: {}
-          schema:
-            parameters:
-              type: dict
-              required: true
-              default: {}
 
     solver:
       type: dict

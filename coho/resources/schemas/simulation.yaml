@@ -2,6 +2,7 @@ simulation:
   type: dict
   required: true
   schema:
+
     wavefront:
       type: dict
       required: true
@@ -26,6 +27,23 @@ simulation:
             sigma: {type: float, min: 0.0, default: 64, required: false}
             width: {type: float, min: 0.0, default: 256, required: false}
             height: {type: float, min: 0.0, required: false}
+            grid:
+              type: dict
+              required: true
+              schema:
+                size: {type: integer, min: 1, default: 512, required: true}
+                spacing: {type: float, min: 0.0, default: 0.001, required: true}
+            geometry:
+              type: dict
+              required: true
+              schema:
+                position:
+                  type: dict
+                  required: true
+                  schema:
+                    x: {type: float, default: 0.0, required: true}
+                    y: {type: float, default: 0.0, required: true}
+                rotation: {type: float, default: 0.0, required: true}
 
     optic:
       type: dict
@@ -52,7 +70,24 @@ simulation:
             radius: {type: float, min: 0.0, default: 128, required: false}
             custom_profile: {type: string, default: "coho/resources/samples/cameraman.npy", required: false}
             seed: {type: integer, default: 0, required: false}
-
+            grid:
+              type: dict
+              required: true
+              schema:
+                size: {type: integer, min: 1, default: 512, required: true}
+                spacing: {type: float, min: 0.0, default: 0.001, required: true}
+            geometry:
+              type: dict
+              required: true
+              schema:
+                position:
+                  type: dict
+                  required: true
+                  schema:
+                    x: {type: float, default: 0.0, required: true}
+                    y: {type: float, default: 0.0, required: true}
+                rotation: {type: float, default: 0.0, required: true}
+            
     sample:
       type: dict
       required: false
@@ -73,6 +108,23 @@ simulation:
             density: {type: float, min: 0.0, default: 1.18, required: true}
             thickness: {type: float, min: 0.0, default: 0.001, required: true}
             custom_profile: {type: string, default: "coho/resources/samples/lena.npy", required: false}
+            grid:
+              type: dict
+              required: true
+              schema:
+                size: {type: integer, min: 1, default: 512, required: true}
+                spacing: {type: float, min: 0.0, default: 0.001, required: true}
+            geometry:
+              type: dict
+              required: true
+              schema:
+                position:
+                  type: dict
+                  required: true
+                  schema:
+                    x: {type: float, default: 0.0, required: true}
+                    y: {type: float, default: 0.0, required: true}
+                rotation: {type: float, default: 0.0, required: true}
 
     detector:
       type: dict
@@ -90,6 +142,20 @@ simulation:
           required: true
           default: {}
           schema:
-            parameters:
+            grid:
               type: dict
-              required: false
+              required: true
+              schema:
+                size: {type: integer, min: 1, default: 512, required: true}
+                spacing: {type: float, min: 0.0, default: 0.001, required: true}
+            geometry:
+              type: dict
+              required: true
+              schema:
+                position:
+                  type: dict
+                  required: true
+                  schema:
+                    x: {type: float, default: 0.0, required: true}
+                    y: {type: float, default: 0.0, required: true}
+                rotation: {type: float, default: 0.0, required: true}

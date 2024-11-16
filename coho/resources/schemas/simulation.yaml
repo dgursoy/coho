@@ -16,40 +16,50 @@ simulation:
           allowed: ["constant", "gaussian", "rectangular"]
         properties:
           type: dict
-          required: true
+          required: false
           default: {}
           schema:
             physical:
               type: dict
-              required: true
+              required: false
+              default: {}
               schema:
-                amplitude: {type: float, min: 0.0, default: 1.0, required: true}
-                phase: {type: float, default: 0.0, required: true}
-                energy: {type: float, min: 0.0, default: 10.0, required: true}
-                sigma: {type: float, min: 0.0, default: 64, required: false}
-                width: {type: float, min: 0.0, default: 256, required: false}
-                height: {type: float, min: 0.0, required: false}
+                amplitude: {type: float, min: 0.0, required: false, default: 1.0}
+                phase: {type: float, required: false, default: 0.0}
+                energy: {type: float, min: 0.0, required: false, default: 10.0}
+            profile:
+              type: dict
+              required: false
+              default: {}
+              schema:
+                sigma: {type: float, min: 0.0, required: false, default: 256}
+                width: {type: float, min: 0.0, required: false, default: 256}
+                height: {type: float, min: 0.0, required: false, default: 256}
             grid:
               type: dict
-              required: true
+              required: false
+              default: {}
               schema:
-                size: {type: integer, min: 1, default: 512, required: true}
-                spacing: {type: float, min: 0.0, default: 0.001, required: true}
+                size: {type: integer, min: 1, required: false, default: 512}
+                spacing: {type: float, min: 0.0, required: false, default: 0.001}
             geometry:
               type: dict
-              required: true
+              required: false
+              default: {}
               schema:
                 position:
                   type: dict
-                  required: true
+                  required: false
+                  default: {}
                   schema:
-                    x: {type: float, default: 0.0, required: true}
-                    y: {type: float, default: 0.0, required: true}
-                rotation: {type: float, default: 0.0, required: true}
+                    x: {type: float, required: false, default: 0.0}
+                    y: {type: float, required: false, default: 0.0}
+                rotation: {type: float, required: false, default: 0.0}
 
     optic:
       type: dict
       required: false
+      default: {}
       schema:
         id:
           type: string
@@ -60,35 +70,47 @@ simulation:
           allowed: ["coded_aperture", "slit_aperture", "circle_aperture", "custom_profile"]
         properties:
           type: dict
-          required: true
+          required: false
           default: {}
           schema:
-            material: {type: string, default: "Au", required: true}
-            density: {type: float, min: 0.0, default: 19.3, required: true}
-            thickness: {type: float, min: 0.0, default: 0.0001, required: true}
-            bit_size: {type: integer, min: 1, default: 64, required: false}
-            width: {type: float, min: 0.0, default: 256, required: false}
-            height: {type: float, min: 0.0, default: 256, required: false}
-            radius: {type: float, min: 0.0, default: 128, required: false}
-            custom_profile: {type: string, default: "coho/resources/samples/cameraman.npy", required: false}
-            seed: {type: integer, default: 0, required: false}
+            physical:
+              type: dict  
+              required: false
+              default: {}
+              schema:
+                formula: {type: string, required: false, default: "Au"}
+                density: {type: float, min: 0.0, required: false, default: 19.3}
+                thickness: {type: float, min: 0.0, required: false, default: 0.0001}
+            profile:
+              type: dict
+              required: false
+              default: {}
+              schema:
+                type: {type: string, required: false, default: "binary_random"}
+                bit_size: {type: integer, min: 1, required: false, default: 64}
+                seed: {type: integer, required: false, default: 0}
+                width: {type: float, min: 0.0, required: false, default: 256}
+                height: {type: float, min: 0.0, required: false, default: 256}
             grid:
               type: dict
-              required: true
+              required: false
+              default: {}
               schema:
-                size: {type: integer, min: 1, default: 512, required: true}
-                spacing: {type: float, min: 0.0, default: 0.001, required: true}
+                size: {type: integer, min: 1, required: false, default: 512}
+                spacing: {type: float, min: 0.0, required: false, default: 0.001}
             geometry:
               type: dict
-              required: true
+              required: false
+              default: {}
               schema:
                 position:
                   type: dict
-                  required: true
+                  required: false
+                  default: {}
                   schema:
-                    x: {type: float, default: 0.0, required: true}
-                    y: {type: float, default: 0.0, required: true}
-                rotation: {type: float, default: 0.0, required: true}
+                    x: {type: float, required: false, default: 0.0}
+                    y: {type: float, required: false, default: 0.0}
+                rotation: {type: float, required: false, default: 0.0}
             
     sample:
       type: dict
@@ -103,30 +125,43 @@ simulation:
           allowed: ["custom_profile"]
         properties:
           type: dict
-          required: true
+          required: false
           default: {}
           schema:
-            material: {type: string, default: "C5H8O2", required: true}
-            density: {type: float, min: 0.0, default: 1.18, required: true}
-            thickness: {type: float, min: 0.0, default: 0.001, required: true}
-            custom_profile: {type: string, default: "coho/resources/samples/lena.npy", required: false}
+            physical:
+              type: dict
+              required: false
+              default: {}
+              schema:
+                formula: {type: string, required: false, default: "C5H8O2"}
+                density: {type: float, min: 0.0, required: false, default: 1.18}
+                thickness: {type: float, min: 0.0, required: false, default: 0.001}
+            profile:
+              type: dict
+              required: false
+              default: {}
+              schema:
+                type: {type: string, required: false, default: "custom_profile"}
+                file_path: {type: string, required: false, default: "coho/resources/samples/lena.npy"}
             grid:
               type: dict
-              required: true
+              required: false
+              default: {}
               schema:
-                size: {type: integer, min: 1, default: 512, required: true}
-                spacing: {type: float, min: 0.0, default: 0.001, required: true}
+                size: {type: integer, min: 1, required: false, default: 512}
+                spacing: {type: float, min: 0.0, required: false, default: 0.001}
             geometry:
               type: dict
-              required: true
+              required: false
+              default: {}
               schema:
                 position:
                   type: dict
                   required: true
                   schema:
-                    x: {type: float, default: 0.0, required: true}
-                    y: {type: float, default: 0.0, required: true}
-                rotation: {type: float, default: 0.0, required: true}
+                    x: {type: float, required: false, default: 0.0}
+                    y: {type: float, required: false, default: 0.0}
+                rotation: {type: float, required: false, default: 0.0}
 
     detector:
       type: dict
@@ -141,23 +176,26 @@ simulation:
           allowed: ["integrating", "photon_counting"]
         properties:
           type: dict
-          required: true
+          required: false
           default: {}
           schema:
             grid:
               type: dict
-              required: true
+              required: false
+              default: {}
               schema:
-                size: {type: integer, min: 1, default: 512, required: true}
-                spacing: {type: float, min: 0.0, default: 0.001, required: true}
+                size: {type: integer, min: 1, required: false, default: 512}
+                spacing: {type: float, min: 0.0, required: false, default: 0.001}
             geometry:
               type: dict
-              required: true
+              required: false
+              default: {}
               schema:
                 position:
                   type: dict
-                  required: true
+                  required: false
+                  default: {}
                   schema:
-                    x: {type: float, default: 0.0, required: true}
-                    y: {type: float, default: 0.0, required: true}
-                rotation: {type: float, default: 0.0, required: true}
+                    x: {type: float, required: false, default: 0.0}
+                    y: {type: float, required: false, default: 0.0}
+                rotation: {type: float, required: false, default: 0.0}

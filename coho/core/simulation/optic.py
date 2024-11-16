@@ -41,9 +41,9 @@ class CodedApertureOptic(Optic):
             Binary pattern array
         """
         # Get parameters
-        bit_size = parameters.get("bit_size")
-        resolution = parameters.get("resolution", PATTERN_PARAMS["RESOLUTION"])
-        rotation = parameters.get("rotation", PATTERN_PARAMS["ROTATION"])
+        bit_size = parameters.get("profile", {}).get("bit_size")
+        resolution = parameters.get("grid", {}).get("size")
+        rotation = parameters.get("geometry", {}).get("rotation")
         seed = parameters.get("seed")
 
         # Generate pattern
@@ -74,10 +74,10 @@ class SlitApertureOptic(Optic):
             Slit pattern array
         """
         # Get parameters
-        width = parameters.get("width")
-        height = parameters.get("height")
-        resolution = parameters.get("resolution", PATTERN_PARAMS["RESOLUTION"])
-        rotation = parameters.get("rotation", PATTERN_PARAMS["ROTATION"])
+        width = parameters.get("profile", {}).get("width")
+        height = parameters.get("profile", {}).get("height")
+        resolution = parameters.get("grid", {}).get("size")
+        rotation = parameters.get("geometry", {}).get("rotation")
 
         # Generate pattern
         pattern = np.zeros((resolution, resolution))
@@ -104,9 +104,9 @@ class CircleApertureOptic(Optic):
             Circle pattern array
         """
         # Get parameters
-        radius = parameters.get("radius")
-        resolution = parameters.get("resolution", PATTERN_PARAMS["RESOLUTION"])
-        rotation = parameters.get("rotation", PATTERN_PARAMS["ROTATION"])
+        radius = parameters.get("profile", {}).get("radius")
+        resolution = parameters.get("grid", {}).get("size")
+        rotation = parameters.get("geometry", {}).get("rotation")
 
         # Generate pattern
         y, x = np.ogrid[:resolution, :resolution]
@@ -137,20 +137,18 @@ class CustomProfileOptic(Optic):
             FileNotFoundError: File not found
             ValueError: Invalid file
         """
-        profile = parameters.get("custom_profile")
-        rotation = parameters.get("rotation", PATTERN_PARAMS["ROTATION"])
+        file_path = parameters.get("profile", {}).get("file_path")
+        rotation = parameters.get("geometry", {}).get("rotation")
 
-        if isinstance(profile, np.ndarray):
-            pattern = profile
-        elif isinstance(profile, str):
+        if isinstance(file_path, str):
             try:
-                pattern = np.load(profile)
+                pattern = np.load(file_path)
             except FileNotFoundError:
-                raise FileNotFoundError(f"Profile not found: {profile}")
+                raise FileNotFoundError(f"Profile not found: {file_path}")
             except ValueError:
-                raise ValueError(f"Invalid profile file: {profile}")
+                raise ValueError(f"Invalid profile file: {file_path}")
         else:
-            raise KeyError("custom_profile required (array or path)")
+            raise KeyError("custom_profile required (path)")
 
         pattern = pattern / np.max(pattern)
         return self.apply_rotation(pattern, rotation)

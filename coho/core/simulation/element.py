@@ -20,9 +20,9 @@ class Element(ABC):
         params = parameters or {}
         
         # Physical properties
-        self.material = params.get("material")
-        self.thickness = params.get("thickness")
-        self.density = params.get("density")
+        self.material = params.get("physical", {}).get("formula")
+        self.thickness = params.get("physical", {}).get("thickness")
+        self.density = params.get("physical", {}).get("density")
         
         # Generate transmission pattern
         self.pattern = self.generate_pattern(params)

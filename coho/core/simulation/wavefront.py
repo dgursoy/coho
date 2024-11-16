@@ -135,7 +135,7 @@ class GaussianWavefront(Wavefront):
         Returns:
             Gaussian array
         """
-        sigma = parameters.get('wave', {}).get("sigma")
+        sigma = parameters.get('profile', {}).get("sigma")
 
         x = np.linspace(-self.shape/2, self.shape/2, self.shape)
         y = np.linspace(-self.shape/2, self.shape/2, self.shape)

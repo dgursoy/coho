@@ -19,14 +19,16 @@ simulation:
           required: true
           default: {}
           schema:
-            amplitude: {type: float, min: 0.0, default: 1.0, required: true}
-            phase: {type: float, default: 0.0, required: true}
-            energy: {type: float, min: 0.0, default: 10.0, required: true}
-            shape: {type: integer, min: 1, default: 512, required: true}
-            spacing: {type: float, min: 0.0, default: 0.001, required: true}
-            sigma: {type: float, min: 0.0, default: 64, required: false}
-            width: {type: float, min: 0.0, default: 256, required: false}
-            height: {type: float, min: 0.0, required: false}
+            physical:
+              type: dict
+              required: true
+              schema:
+                amplitude: {type: float, min: 0.0, default: 1.0, required: true}
+                phase: {type: float, default: 0.0, required: true}
+                energy: {type: float, min: 0.0, default: 10.0, required: true}
+                sigma: {type: float, min: 0.0, default: 64, required: false}
+                width: {type: float, min: 0.0, default: 256, required: false}
+                height: {type: float, min: 0.0, required: false}
             grid:
               type: dict
               required: true

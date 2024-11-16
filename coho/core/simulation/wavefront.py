@@ -19,6 +19,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any
 import numpy as np
 
+
 PHYSICAL_CONSTANTS = {
     'PLANCK_CONSTANT': 6.58211928e-19,  # keV*s
     'SPEED_OF_LIGHT': 299792458e+2,     # cm/s
@@ -42,9 +43,9 @@ class Wavefront(ABC):
         """
         parameters = parameters or {}
         self.id = id
-        self.energy = parameters.get('energy')
-        self.shape = parameters.get('shape')
-        self.spacing = parameters.get('spacing')
+        self.energy = parameters.get('physical', {}).get('energy')
+        self.shape = parameters.get('grid', {}).get('size')
+        self.spacing = parameters.get('grid', {}).get('spacing')
         
         self.amplitude = self.generate_amplitude(parameters)
         self.phase = self.generate_phase(parameters)
@@ -77,7 +78,7 @@ class Wavefront(ABC):
         Returns:
             Scaled amplitude array
         """
-        amplitude = parameters.get("amplitude")
+        amplitude = parameters.get('physical', {}).get("amplitude")
         return self.generate_pattern(parameters) * amplitude
 
     def generate_phase(self, parameters: Dict[str, Any]) -> np.ndarray:
@@ -89,7 +90,7 @@ class Wavefront(ABC):
         Returns:
             Scaled phase array
         """
-        phase = parameters.get("phase")
+        phase = parameters.get('physical', {}).get("phase")
         return self.generate_pattern(parameters) * phase
 
     @abstractmethod
@@ -117,8 +118,7 @@ class ConstantWavefront(Wavefront):
         Returns:
             Unit array
         """
-        shape = parameters.get("shape")
-        return np.ones((shape, shape))
+        return np.ones((self.shape, self.shape))
 
 
 class GaussianWavefront(Wavefront):
@@ -135,11 +135,10 @@ class GaussianWavefront(Wavefront):
         Returns:
             Gaussian array
         """
-        sigma = parameters.get("sigma")
-        shape = parameters.get("shape")
+        sigma = parameters.get('wave', {}).get("sigma")
 
-        x = np.linspace(-shape/2, shape/2, shape)
-        y = np.linspace(-shape/2, shape/2, shape)
+        x = np.linspace(-self.shape/2, self.shape/2, self.shape)
+        y = np.linspace(-self.shape/2, self.shape/2, self.shape)
         xx, yy = np.meshgrid(x, y)
         return np.exp(-((xx**2 + yy**2) / (2 * sigma**2)))
 
@@ -159,12 +158,11 @@ class RectangularWavefront(Wavefront):
         Returns:
             Binary rectangle array
         """
-        shape = parameters.get("shape")
-        width = parameters.get("width")
-        height = parameters.get("height")
+        width = parameters.get('wave', {}).get("width")
+        height = parameters.get('wave', {}).get("height")
 
-        pattern = np.zeros((shape, shape))
-        x_start = (shape - width) // 2
-        y_start = (shape - height) // 2
+        pattern = np.zeros((self.shape, self.shape))
+        x_start = (self.shape - width) // 2
+        y_start = (self.shape - height) // 2
         pattern[y_start:y_start + height, x_start:x_start + width] = 1.0
         return pattern

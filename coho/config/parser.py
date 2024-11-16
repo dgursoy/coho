@@ -17,6 +17,7 @@ Registry:
     FACTORIES: Mapping of component types to their factory instances
 """
 
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
 
 from ..config.manager import load_simulation_config
@@ -50,6 +51,94 @@ FACTORIES = {
     "experiment": ExperimentFactory(),
 }
 
+@dataclass
+class ValidationResult:
+    """Represents the result of a configuration validation."""
+    is_valid: bool
+    errors: List[str]
+
+class ConfigValidator:
+    """Handles validation of configuration sections."""
+    
+    @staticmethod
+    def validate_simulation(config: Dict[str, Any]) -> ValidationResult:
+        errors = []
+        if "simulation" not in config:
+            return ValidationResult(False, ["Missing 'simulation' section"])
+        
+        sim_config = config["simulation"]
+        for component in {"wavefront", "detector"}:
+            if component not in sim_config:
+                errors.append(f"Missing required component: {component}")
+                
+        return ValidationResult(len(errors) == 0, errors)
+
+    @staticmethod
+    def validate_operator(config: Dict[str, Any]) -> ValidationResult:
+        errors = []
+        if "operator" not in config:
+            return ValidationResult(False, ["Missing 'operator' section"])
+            
+        op_config = config["operator"]
+        for operator in {"propagator", "interactor"}:
+            if operator not in op_config:
+                errors.append(f"Missing required operator: {operator}")
+                
+        return ValidationResult(len(errors) == 0, errors)
+
+    @staticmethod
+    def validate_optimization(config: Dict[str, Any]) -> ValidationResult:
+        errors = []
+        if "optimization" not in config:
+            return ValidationResult(True, [])  # Optional section
+            
+        opt_config = config["optimization"]
+        if "solver" in opt_config:
+            if "type" not in opt_config["solver"]:
+                errors.append("Solver missing required 'type' field")
+                
+        if "objective" in opt_config:
+            if "type" not in opt_config["objective"]:
+                errors.append("Objective missing required 'type' field")
+                
+        return ValidationResult(len(errors) == 0, errors)
+
+    @staticmethod
+    def validate_experiment(config: Dict[str, Any]) -> ValidationResult:
+        errors = []
+        if "experiment" not in config:
+            return ValidationResult(False, ["Missing 'experiment' section"])
+            
+        exp_config = config["experiment"]
+        if not isinstance(exp_config, list):
+            return ValidationResult(False, ["Experiment must be a list of steps"])
+            
+        for idx, step in enumerate(exp_config):
+            if not isinstance(step, dict):
+                errors.append(f"Step {idx}: Must be a dictionary")
+            elif "component_id" not in step:
+                errors.append(f"Step {idx}: Missing required 'component_id'")
+                
+        return ValidationResult(len(errors) == 0, errors)
+
+    @classmethod
+    def validate_all(cls, config: Dict[str, Any]) -> None:
+        """Validate complete configuration and raise exception if invalid."""
+        validators = [
+            cls.validate_simulation,
+            cls.validate_operator,
+            cls.validate_optimization,
+            cls.validate_experiment
+        ]
+        
+        all_errors = []
+        for validator in validators:
+            result = validator(config)
+            if not result.is_valid:
+                all_errors.extend(result.errors)
+        
+        if all_errors:
+            raise ValueError("Configuration validation failed:\n" + "\n".join(all_errors))
 
 class IdGenerator:
     """Generates unique IDs for simulation components."""
@@ -80,23 +169,15 @@ def parse_components(
     if not factory:
         raise ValueError(f"Unknown component type: {component_type}")
 
-    # Handle single component case
     if isinstance(config, dict):
         component_id = id_gen.generate_id(component_type, config.get("id"))
-        # Default to empty dict if properties not specified
-        properties = config.get("properties", {})
-        if properties is None:  # Handle explicit None case
-            properties = {}
+        properties = config.get("properties", {}) or {}
         return factory.create(component_id, config["type"], properties)
 
-    # Handle multiple components case
     components = []
     for cfg in config:
         component_id = id_gen.generate_id(component_type, cfg.get("id"))
-        # Default to empty dict if properties not specified
-        properties = cfg.get("properties", {})
-        if properties is None:  # Handle explicit None case
-            properties = {}
+        properties = cfg.get("properties", {}) or {}
         component = factory.create(component_id, cfg["type"], properties)
         components.append(component)
     return components
@@ -129,5 +210,6 @@ def build_simulation_from_config(config_path: str) -> Simulation:
         Configured simulation instance
     """
     config = load_simulation_config(config_path)
+    ConfigValidator.validate_all(config)
     components = parse_config(config)
     return Simulation(**components)

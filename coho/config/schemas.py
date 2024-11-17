@@ -30,10 +30,10 @@ SchemaDict: TypeAlias = Dict[str, Dict]
 _SCHEMAS: SchemaDict = {}
 
 # Define paths to individual schema files
-SCHEMA_DIR = Path(__file__).resolve().parent.parent / 'resources/schemas'
+SCHEMA_DIR = Path(__file__).resolve().parent / 'schemas'
 SCHEMA_PATHS: Dict[str, Path] = {
     'operator': SCHEMA_DIR / 'operator.yaml',
-    'optimization': SCHEMA_DIR / 'optimization.yaml',
+    'optimization': SCHEMA_DIR / 'optimization.yaml', 
     'simulation': SCHEMA_DIR / 'simulation.yaml',
     'experiment': SCHEMA_DIR / 'experiment.yaml'
 }

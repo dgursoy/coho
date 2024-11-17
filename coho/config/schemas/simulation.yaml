@@ -10,7 +10,7 @@ simulation:
         id:
           type: string
           required: true
-        type:
+        model:
           type: string
           required: true
           allowed: ["constant", "gaussian", "rectangular"]
@@ -65,7 +65,7 @@ simulation:
         id:
           type: string
           required: true
-        type:
+        model:
           type: string
           required: true
           allowed: ["coded_aperture", "slit_aperture", "circle_aperture", "custom_profile"]
@@ -87,7 +87,7 @@ simulation:
               required: false
               default: {}
               schema:
-                type: {type: string, required: false, default: "binary_random"}
+                model: {type: string, required: false, default: "binary_random"}
                 bit_size: {type: integer, min: 1, required: false, default: 64}
                 seed: {type: integer, required: false, default: 0}
                 width: {type: float, min: 0.0, required: false, default: 256}
@@ -121,7 +121,7 @@ simulation:
         id:
           type: string
           required: true
-        type:
+        model:
           type: string
           required: true
           allowed: ["custom_profile"]
@@ -143,7 +143,7 @@ simulation:
               required: false
               default: {}
               schema:
-                type: {type: string, required: false, default: "custom_profile"}
+                model: {type: string, required: false, default: "custom_profile"}
                 file_path: {type: string, required: false, default: "coho/resources/samples/lena.npy"}
             grid:
               type: dict
@@ -173,7 +173,7 @@ simulation:
         id:
           type: string
           required: true
-        type:
+        model:
           type: string
           required: true
           allowed: ["integrating", "photon_counting"]

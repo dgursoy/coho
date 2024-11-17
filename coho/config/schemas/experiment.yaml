@@ -5,7 +5,7 @@ experiment:
     id:
       type: string
       required: true
-    type:
+    model:
       type: string
       required: true
     properties:

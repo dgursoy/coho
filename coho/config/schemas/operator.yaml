@@ -1,3 +1,5 @@
+# config/schemas/operator.yaml
+
 operator:
   type: dict
   required: true

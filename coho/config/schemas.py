@@ -2,40 +2,36 @@
 
 """Schema registry for configuration validation.
 
-This module manages the registration and access of schema definitions
-used for validating simulation configurations.
+This module manages the registration and access of schema definitions used
+for validating simulation configurations.
 
 Functions:
     register_schemas: Load and register all component schemas
     register_schema: Register a single schema file
     get_schema: Get registered schema by name
 
-Constants:
-    SCHEMA_DIR: Directory containing schema files
-    SCHEMA_PATHS: Mapping of component names to schema files
-
-Type Aliases:
-    SchemaDict: Dict[str, Dict]
-        Dictionary mapping schema names to their definitions
+Schema Files:
+    - operator.yaml: Operator component schemas
+    - optimization.yaml: Optimization component schemas
+    - simulation.yaml: Simulation component schemas
+    - experiment.yaml: Experiment component schemas
 """
 
-from typing import Dict, Optional, TypeAlias
+from typing import Dict
 from pathlib import Path
+from .types import SchemaDict, SchemaRegistry
 from .reader import read_config
 
-# Type aliases
-SchemaDict: TypeAlias = Dict[str, Dict]
-
 # Schema registry
-_SCHEMAS: SchemaDict = {}
+_SCHEMAS: SchemaRegistry = {}
 
 # Define paths to individual schema files
-SCHEMA_DIR = Path(__file__).resolve().parent / 'schemas'
-SCHEMA_PATHS: Dict[str, Path] = {
-    'operator': SCHEMA_DIR / 'operator.yaml',
-    'optimization': SCHEMA_DIR / 'optimization.yaml', 
-    'simulation': SCHEMA_DIR / 'simulation.yaml',
-    'experiment': SCHEMA_DIR / 'experiment.yaml'
+_SCHEMA_DIR = Path(__file__).resolve().parent / 'schemas'
+_SCHEMA_PATHS: Dict[str, Path] = {
+    'operator': _SCHEMA_DIR / 'operator.yaml',
+    'optimization': _SCHEMA_DIR / 'optimization.yaml', 
+    'simulation': _SCHEMA_DIR / 'simulation.yaml',
+    'experiment': _SCHEMA_DIR / 'experiment.yaml'
 }
 
 def register_schema(name: str, schema_path: Path) -> None:
@@ -63,10 +59,10 @@ def register_schemas() -> None:
         FileNotFoundError: If any schema file is missing
         ValueError: If any schema is empty or invalid
     """
-    for name, path in SCHEMA_PATHS.items():
+    for name, path in _SCHEMA_PATHS.items():
         register_schema(name, path)
 
-def get_schema(name: str) -> Optional[Dict]:
+def get_schema(name: str) -> SchemaDict | None:
     """Get a registered schema by name.
     
     Args:

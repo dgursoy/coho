@@ -1,3 +1,16 @@
+# config/models/common.py
+
+"""Common configuration models.
+
+This module provides basic shared data structures used across
+different components of the optical simulation system.
+
+Classes:
+    Position: 3D spatial position (x, y, z)
+    Geometry: Position and rotation in space
+    Grid: Spatial discretization parameters
+"""
+
 from pydantic import BaseModel
 
 class Position(BaseModel):

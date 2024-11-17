@@ -37,9 +37,6 @@ from .config import (
     register_schemas,
     validate_config,
     build_config,
-    ConfigDict,
-    BuildResult,
-    BuildResults,
 )
 
 # Factories
@@ -64,9 +61,6 @@ __all__ = [
     'register_schemas',
     'validate_config',
     'build_config',
-    'ConfigDict',
-    'BuildResult',
-    'BuildResults',
     # Factories
     'WavefrontFactory',
     'OpticFactory',

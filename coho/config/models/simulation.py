@@ -1,4 +1,33 @@
-from typing import Optional, Dict, Any
+# config/models/simulation.py
+
+"""Simulation configuration models.
+
+This module defines models for optical simulation components including
+wavefronts, optical elements, samples, and detectors.
+
+Classes:
+    WavefrontPhysical: Physical properties of light source
+    WavefrontProfile: Spatial profile of light source
+    WavefrontProperties: Complete wavefront properties
+    Wavefront: Light source configuration
+    
+    OpticPhysical: Physical properties of optical element
+    OpticProfile: Spatial profile of optical element
+    OpticProperties: Complete optic properties
+    Optic: Optical element configuration
+    
+    SamplePhysical: Physical properties of sample
+    SampleProfile: Spatial profile of sample
+    SampleProperties: Complete sample properties
+    Sample: Sample configuration
+    
+    DetectorProperties: Detector properties
+    Detector: Detector configuration
+    
+    SimulationConfig: Complete simulation configuration
+"""
+
+from typing import Optional
 from pydantic import BaseModel
 from .common import Grid, Geometry
 

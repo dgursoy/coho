@@ -1,3 +1,5 @@
+# config/schemas/experiment.yaml
+
 experiment:
   type: dict
   required: true

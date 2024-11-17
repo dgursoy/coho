@@ -2,27 +2,22 @@
 
 """Configuration validation using registered schemas.
 
-This module validates configuration files against their registered schemas
-to ensure they meet the required structure and constraints.
+This module validates configuration data against predefined schemas to ensure
+correct structure and data types.
 
 Functions:
-    validate_config: Validate complete configuration
+    validate_config: Validate complete configuration against all schemas
     validate_section: Validate a specific configuration section
 
-Types:
-    ValidationResult: Tuple of (is_valid, error_messages)
-    ConfigDict: Dictionary of named configuration sections
+The validation uses Cerberus schemas registered through the schemas module.
+Each section of the configuration is validated independently.
 """
 
-from typing import Dict, List, Tuple, TypeAlias
 from cerberus import Validator
 from .schemas import get_schema
+from .types import ConfigDict, ValidationResult, ValidationErrors
 
-# Type aliases
-ValidationResult: TypeAlias = Tuple[bool, List[str]]
-ConfigDict: TypeAlias = Dict[str, Dict]
-
-def validate_section(section_name: str, config: Dict) -> ValidationResult:
+def validate_section(section_name: str, config: ConfigDict) -> ValidationResult:
     """Validate a specific section of the configuration.
 
     Args:
@@ -53,13 +48,11 @@ def validate_config(config: ConfigDict) -> ValidationResult:
     Returns:
         Tuple of (is_valid, list of error messages)
     """
-    all_errors: List[str] = []
+    all_errors: ValidationErrors = []
     
     for section_name in config:
         is_valid, errors = validate_section(section_name, config[section_name])
         if not is_valid:
-            all_errors.append([
-                f"{section_name}: {errors}"
-            ])
+            all_errors.append(f"{section_name}: {errors}")
     
     return not bool(all_errors), all_errors

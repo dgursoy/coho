@@ -1,3 +1,5 @@
+# config/schemas/optimization.yaml
+
 optimization:
   type: dict
   required: true

@@ -1,3 +1,5 @@
+# config/schemas/simulation.yaml
+
 simulation:
   type: dict
   required: true

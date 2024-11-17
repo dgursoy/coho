@@ -54,6 +54,7 @@ simulation:
                   schema:
                     x: {type: float, required: false, default: 0.0}
                     y: {type: float, required: false, default: 0.0}
+                    z: {type: float, required: false, default: 0.0}
                 rotation: {type: float, required: false, default: 0.0}
 
     optic:
@@ -110,6 +111,7 @@ simulation:
                   schema:
                     x: {type: float, required: false, default: 0.0}
                     y: {type: float, required: false, default: 0.0}
+                    z: {type: float, required: false, default: 0.0}
                 rotation: {type: float, required: false, default: 0.0}
             
     sample:
@@ -161,6 +163,7 @@ simulation:
                   schema:
                     x: {type: float, required: false, default: 0.0}
                     y: {type: float, required: false, default: 0.0}
+                    z: {type: float, required: false, default: 0.0}
                 rotation: {type: float, required: false, default: 0.0}
 
     detector:
@@ -198,4 +201,5 @@ simulation:
                   schema:
                     x: {type: float, required: false, default: 0.0}
                     y: {type: float, required: false, default: 0.0}
+                    z: {type: float, required: false, default: 0.0}
                 rotation: {type: float, required: false, default: 0.0}

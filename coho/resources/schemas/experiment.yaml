@@ -1,16 +1,32 @@
 experiment:
-  type: list
+  type: dict
+  required: true
   schema:
-    type: dict
-    schema:
-      component_id:
-        type: string
-        required: true
-      geometry:
-        type: dict
-        required: true
-        schema:
-          position:
-            type: float
-            required: true
-            min: 0.0
+    id:
+      type: string
+      required: true
+    type:
+      type: string
+      required: true
+    properties:
+      type: dict
+      required: false
+      default: {}
+      schema:
+        components:
+          type: list
+          required: true
+        workflow:
+          type: dict
+          required: true
+          schema:
+            steps:
+              type: list
+              required: true
+              schema:
+                type: dict
+                schema:
+                  action:
+                    type: string
+                    required: true
+                    allowed: ['initialize', 'collect', 'finalize']

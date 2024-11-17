@@ -2,26 +2,48 @@
 
 """Configuration management for optical simulations.
 
-This package handles config loading, validation, and
-component creation.
+This package handles configuration reading, validation,
+and object construction.
 
-Modules:
-    loader: File loading utilities
-        load_config: Load YAML/JSON files
+Functions:
+    read_config: Read configuration from file
+    validate_config: Validate configuration against schemas
+    build_config: Build configuration objects
 
-    manager: Schema validation
-        load_simulation_config: Validate against schemas
+Type Aliases:
+    ConfigDict: Dictionary containing configuration data
+    BuildResult: Build result with success status and model/error
+    BuildResults: Dictionary of section build results
 
-    parser: Component creation
-        build_simulation_from_config: Create simulation
+Constants:
+    SCHEMA_DIR: Directory containing schema files
+    SCHEMA_PATHS: Mapping of component names to schema files
+    MODEL_MAPPING: Mapping of section names to Pydantic models
 """
 
-from .loader import load_config
-from .manager import load_simulation_config
-from .parser import build_simulation_from_config
+from .reader import read_config, ConfigDict
+from .schemas import register_schemas, get_schema
+from .validator import validate_config, validate_section
+from .builder import (
+    build_config,
+    build_section,
+    BuildResult,
+    BuildResults,
+)
 
 __all__ = [
-    'load_config',
-    'load_simulation_config',
-    'build_simulation_from_config'
+    # Reader
+    'read_config',
+    'ConfigDict',
+    # Schemas
+    'register_schemas',
+    'get_schema',
+    # Validator
+    'validate_config',
+    'validate_section',
+    # Builder
+    'build_config',
+    'build_section',
+    'BuildResult',
+    'BuildResults',
 ]

@@ -1,42 +1,28 @@
 # config/__init__.py
 
-"""Configuration management for optical simulations.
+"""Configuration management.
 
 This package provides a complete configuration system for optical simulations,
 including file reading, schema validation, and object construction.
 
-Modules:
+Main Functions:
+    load_config: Read, validate and build configuration from source
+    read_config: Read raw configuration from supported file formats
+
+Internal Modules:
     reader: Configuration file reading utilities
     schemas: Schema registry and management
     validator: Configuration validation
     builder: Configuration object construction
+    loader: Configuration loading and building
     types: Type definitions and aliases
     models: Pydantic models for configuration objects
-
-Main Functions:
-    read_config: Read configuration from supported file formats
-    validate_config: Validate configuration against schemas
-    build_config: Build configuration objects from validated data
 """
 
-from .reader import read_config
-from .schemas import register_schemas, get_schema
-from .validator import validate_config, validate_section
-from .builder import (
-    build_config,
-    build_section,
-)
+from .loader import load_config   
+from .reader import read_config  
 
 __all__ = [
-    # Reader
-    'read_config',
-    # Schemas
-    'register_schemas',
-    'get_schema',
-    # Validator
-    'validate_config',
-    'validate_section',
-    # Builder
-    'build_config',
-    'build_section',
+    'load_config',  
+    'read_config',  
 ]

@@ -34,9 +34,7 @@ Modules:
 # Configuration
 from .config import (
     read_config,
-    register_schemas,
-    validate_config,
-    build_config,
+    load_config
 )
 
 # Factories
@@ -58,9 +56,7 @@ from .engine.simulation import Simulation
 __all__ = [
     # Configuration
     'read_config',
-    'register_schemas',
-    'validate_config',
-    'build_config',
+    'load_config',
     # Factories
     'WavefrontFactory',
     'OpticFactory',

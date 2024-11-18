@@ -6,8 +6,7 @@ This module defines type aliases and custom types used throughout the configurat
 package for improved type safety and code clarity.
 
 Type Aliases:
-    ConfigContent: Raw configuration content from files
-    EncodingType: File encoding specification
+    ConfigContent: Raw configuration content from files in a dictionary
     ConfigDict: Basic configuration dictionary
     SchemaDict: Schema definition dictionary
     SchemaRegistry: Registry mapping names to schemas
@@ -17,19 +16,18 @@ Type Aliases:
     BuildResults: Dictionary of build results by section
 """
 
-from typing import Dict, List, Union, TypeAlias, Any, Optional
+from typing import Dict, List, Union, TypeAlias, Any
 from pydantic import BaseModel
 
 # Reader types
-ConfigContent: TypeAlias = Union[Dict[str, Any], List[Any]]
-
-# Encoding types
-EncodingType: TypeAlias = Optional[str]
+ConfigContent: TypeAlias = Dict[str, Any]
 
 # Basic configuration types
 ConfigDict: TypeAlias = Dict[str, Any]
+
+# Schema types
 SchemaDict: TypeAlias = Dict[str, Any]
-SchemaRegistry: TypeAlias = dict[str, SchemaDict]
+SchemaRegistry: TypeAlias = Dict[str, SchemaDict]
 
 # Validation types
 ValidationErrors: TypeAlias = List[str]

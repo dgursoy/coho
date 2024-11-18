@@ -47,10 +47,10 @@ theme:
     # Content features
     - content.code.copy # Copy button on code blocks
     - content.code.annotate # Code annotations
-    - content.tooltips          # Tooltip on hover
+    - content.tooltips # Tooltip on hover
 
     # Header features
-    - header.autohide          # Hide header on scroll
+    - header.autohide # Hide header on scroll
 
     # Table of contents features
     - toc.integrate # Integrated table of contents

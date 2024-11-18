@@ -19,12 +19,14 @@ from .models.operator import OperatorConfig
 from .models.experiment import ExperimentConfig
 from .models.optimization import OptimizationConfig
 
-MODEL_MAPPING = {
-    'simulation': SimulationConfig,
-    'operator': OperatorConfig,
-    'experiment': ExperimentConfig,
-    'optimization': OptimizationConfig
-}
+def get_model_mapping() -> dict:
+    """Returns the mapping of configuration sections to Pydantic models."""
+    return {
+        'simulation': SimulationConfig,
+        'operator': OperatorConfig,
+        'experiment': ExperimentConfig,
+        'optimization': OptimizationConfig,
+    }
 
 def build_section(section_name: str, config: ConfigDict) -> BuildResult:
     """Build a configuration section object.
@@ -41,7 +43,9 @@ def build_section(section_name: str, config: ConfigDict) -> BuildResult:
     Raises:
         None: Exceptions are caught and returned as error strings
     """
-    model_class = MODEL_MAPPING.get(section_name)
+    model_mapping = get_model_mapping()
+    model_class = model_mapping.get(section_name)
+    
     if not model_class:
         return False, f"No model found for section: {section_name}"
 

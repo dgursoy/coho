@@ -36,7 +36,6 @@ from .operator import (
     OperatorConfig
 )
 from .experiment import (
-    WorkflowStep,
     ExperimentProperties,
     ExperimentConfig
 )

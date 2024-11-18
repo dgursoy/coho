@@ -18,17 +18,3 @@ experiment:
         components:
           type: list
           required: true
-        workflow:
-          type: dict
-          required: true
-          schema:
-            steps:
-              type: list
-              required: true
-              schema:
-                type: dict
-                schema:
-                  action:
-                    type: string
-                    required: true
-                    allowed: ['initialize', 'collect', 'finalize']

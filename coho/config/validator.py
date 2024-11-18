@@ -15,35 +15,19 @@ Each section of the configuration is validated independently.
 
 from cerberus import Validator
 from .schemas import get_schema
-from .types import ConfigDict, ValidationResult, ValidationErrors
+from .types import ConfigDict, ValidationResult, ValidationErrors, SchemaRegistry
 
-def validate_section(section_name: str, config: ConfigDict) -> ValidationResult:
-    """Validate a specific section of the configuration.
+__all__ = [
+    'validate_config',
+    'validate_section',
+]
 
-    Args:
-        section_name: Name of section to validate
-        config: Configuration dictionary to validate
-
-    Returns:
-        Tuple of (is_valid, list of error messages)
-
-    Raises:
-        ValueError: If schema not found for section
-    """
-    schema = get_schema(section_name)
-    if not schema:
-        raise ValueError(f"No schema found for section: {section_name}")
-
-    validator = Validator(schema)
-    is_valid = validator.validate(config)
-    
-    return is_valid, validator.errors
-
-def validate_config(config: ConfigDict) -> ValidationResult:
+def validate_config(config: ConfigDict, schemas: SchemaRegistry) -> ValidationResult:
     """Validate complete configuration against all schemas.
 
     Args:
         config: Complete configuration dictionary with named sections
+        schemas: Dictionary of registered schemas
 
     Returns:
         Tuple of (is_valid, list of error messages)
@@ -51,8 +35,35 @@ def validate_config(config: ConfigDict) -> ValidationResult:
     all_errors: ValidationErrors = []
     
     for section_name in config:
-        is_valid, errors = validate_section(section_name, config[section_name])
+        is_valid, errors = validate_section(section_name, config[section_name], schemas)
         if not is_valid:
             all_errors.append(f"{section_name}: {errors}")
     
     return not bool(all_errors), all_errors
+
+def validate_section(
+    section_name: str, 
+    config: ConfigDict, 
+    schemas: SchemaRegistry
+) -> ValidationResult:
+    """Validate a specific section of the configuration.
+
+    Args:
+        section_name: Name of section to validate
+        config: Configuration dictionary to validate
+        schemas: Dictionary of registered schemas
+
+    Returns:
+        Tuple of (is_valid, list of error messages)
+
+    Raises:
+        ValueError: If schema not found for section
+    """
+    schema = get_schema(section_name, schemas)
+    if not schema:
+        raise ValueError(f"No schema found for section: {section_name}")
+
+    validator = Validator(schema)
+    is_valid = validator.validate(config)
+    
+    return is_valid, validator.errors

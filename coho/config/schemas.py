@@ -17,62 +17,72 @@ Schema Files:
     - experiment.yaml: Experiment component schemas
 """
 
-from typing import Dict, Optional
+from typing import Dict
 from pathlib import Path
-from .types import SchemaDict, SchemaRegistry
+from os import PathLike
 from .reader import read_config
+from .types import SchemaDict, SchemaRegistry
 
-# Schema registry
-_SCHEMAS: SchemaRegistry = {}
 
-# Define paths to individual schema files
-_SCHEMA_DIR = Path(__file__).resolve().parent / 'schemas'
-_SCHEMA_PATHS: Dict[str, Path] = {
-    'operator': _SCHEMA_DIR / 'operator.yaml',
-    'optimization': _SCHEMA_DIR / 'optimization.yaml', 
-    'simulation': _SCHEMA_DIR / 'simulation.yaml',
-    'experiment': _SCHEMA_DIR / 'experiment.yaml'
-}
+# Define directory containing schema files
+_SCHEMA_DIR = Path(__file__).resolve().parent / "schemas"
 
-def register_schema(name: str, schema_path: Path) -> None:
-    """Register a single schema definition.
-    
+def get_schema_paths(schema_dir: Path) -> Dict[str, Path]:
+    """Generate schema paths dynamically from the given directory.
+
     Args:
-        name: Name to register schema under
+        schema_dir: Path to the directory containing schema files
+
+    Returns:
+        A dictionary mapping schema names to file paths
+    """
+    return {
+        path.stem: path for path in schema_dir.glob("*.yaml") if path.is_file()
+    }
+
+def get_schema(name: str, schemas: SchemaRegistry) -> SchemaDict | None:
+    """Retrieve a registered schema by name.
+
+    Args:
+        name: Name of the schema to retrieve
+        schemas: The dictionary of registered schemas
+
+    Returns:
+        The schema if found, otherwise None
+    """
+    return schemas.get(name)
+
+def register_schema(name: str, schema_path: PathLike) -> SchemaDict:
+    """Register a single schema definition.
+
+    Args:
+        name: Name to register the schema under
         schema_path: Path to schema YAML file
 
+    Returns:
+        The schema dictionary
+
     Raises:
-        FileNotFoundError: If schema file is missing
-        ValueError: If schema is empty or invalid
-        yaml.YAMLError: If schema file has invalid YAML syntax
+        ValueError: If the schema is empty or invalid
     """
-    raw_schema = read_config(str(schema_path))
+    print(f"Reading schema from {schema_path}")
+    raw_schema = read_config(schema_path)
     if not raw_schema or name not in raw_schema:
         raise ValueError(f"Invalid schema at {schema_path}")
     
-    # Store just the schema definition, not the whole file
-    _SCHEMAS[name] = raw_schema[name]['schema']
+    return raw_schema[name]['schema']
 
-def register_schemas() -> None:
-    """Register all component schemas from schema directory.
-    
-    This function loads all predefined schema files from the schemas
-    directory and registers them in the schema registry.
+def register_schemas() -> SchemaRegistry:
+    """Register all component schemas.
 
-    Raises:
-        FileNotFoundError: If schema directory is missing
-        ValueError: If any schema file is invalid
-    """
-    for name, path in _SCHEMA_PATHS.items():
-        register_schema(name, path)
-
-def get_schema(name: str) -> Optional[SchemaDict]:
-    """Get a registered schema by name.
-    
     Args:
-        name: Name of schema to retrieve
+        schema_paths: A dictionary of schema names and their file paths
 
     Returns:
-        SchemaDict if schema exists, None otherwise
+        A dictionary of registered schemas
     """
-    return _SCHEMAS.get(name)
+    schema_paths = get_schema_paths(_SCHEMA_DIR)
+    schemas: SchemaRegistry = {}
+    for name, path in schema_paths.items():
+        schemas[name] = register_schema(name, path)
+    return schemas

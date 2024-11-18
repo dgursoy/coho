@@ -27,7 +27,20 @@ MODEL_MAPPING = {
 }
 
 def build_section(section_name: str, config: ConfigDict) -> BuildResult:
-    """Build a configuration section object."""
+    """Build a configuration section object.
+    
+    Args:
+        section_name: Name of the configuration section
+        config: Configuration dictionary for the section
+
+    Returns:
+        BuildResult: Tuple of (success, result) where:
+            - success: Boolean indicating if build succeeded
+            - result: Either Pydantic model if successful, or error string if failed
+
+    Raises:
+        None: Exceptions are caught and returned as error strings
+    """
     model_class = MODEL_MAPPING.get(section_name)
     if not model_class:
         return False, f"No model found for section: {section_name}"
@@ -38,7 +51,19 @@ def build_section(section_name: str, config: ConfigDict) -> BuildResult:
         return False, str(e)
 
 def build_config(config: ConfigDict) -> BuildResults:
-    """Build complete configuration object."""
+    """Build complete configuration object from all sections.
+    
+    Args:
+        config: Dictionary containing all configuration sections
+
+    Returns:
+        BuildResults: Dictionary mapping section names to BuildResult tuples
+
+    Example:
+        >>> config = {'simulation': {...}, 'operator': {...}}
+        >>> results = build_config(config)
+        >>> simulation_success, simulation_model = results['simulation']
+    """
     return {
         section: build_section(section, section_config)
         for section, section_config in config.items()

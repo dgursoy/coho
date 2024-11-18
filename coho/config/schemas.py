@@ -17,7 +17,7 @@ Schema Files:
     - experiment.yaml: Experiment component schemas
 """
 
-from typing import Dict
+from typing import Dict, Optional
 from pathlib import Path
 from .types import SchemaDict, SchemaRegistry
 from .reader import read_config
@@ -36,7 +36,7 @@ _SCHEMA_PATHS: Dict[str, Path] = {
 
 def register_schema(name: str, schema_path: Path) -> None:
     """Register a single schema definition.
-
+    
     Args:
         name: Name to register schema under
         schema_path: Path to schema YAML file
@@ -44,6 +44,7 @@ def register_schema(name: str, schema_path: Path) -> None:
     Raises:
         FileNotFoundError: If schema file is missing
         ValueError: If schema is empty or invalid
+        yaml.YAMLError: If schema file has invalid YAML syntax
     """
     raw_schema = read_config(str(schema_path))
     if not raw_schema or name not in raw_schema:
@@ -53,22 +54,25 @@ def register_schema(name: str, schema_path: Path) -> None:
     _SCHEMAS[name] = raw_schema[name]['schema']
 
 def register_schemas() -> None:
-    """Load and register all component schemas.
+    """Register all component schemas from schema directory.
+    
+    This function loads all predefined schema files from the schemas
+    directory and registers them in the schema registry.
 
     Raises:
-        FileNotFoundError: If any schema file is missing
-        ValueError: If any schema is empty or invalid
+        FileNotFoundError: If schema directory is missing
+        ValueError: If any schema file is invalid
     """
     for name, path in _SCHEMA_PATHS.items():
         register_schema(name, path)
 
-def get_schema(name: str) -> SchemaDict | None:
+def get_schema(name: str) -> Optional[SchemaDict]:
     """Get a registered schema by name.
     
     Args:
         name: Name of schema to retrieve
-        
+
     Returns:
-        Schema definition if found, None otherwise
+        SchemaDict if schema exists, None otherwise
     """
     return _SCHEMAS.get(name)

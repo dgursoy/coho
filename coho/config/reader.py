@@ -111,19 +111,26 @@ SUPPORTED_FORMATS = {
 }
 
 def read_config(file_path: str, encoding: EncodingType = 'utf-8') -> ConfigContent:
-    """Read configuration from any supported format.
-
+    """Read configuration from a file in any supported format.
+    
     Args:
         file_path: Path to configuration file
         encoding: File encoding (default: utf-8)
 
     Returns:
-        Parsed content
+        ConfigContent: Parsed configuration content
 
     Raises:
-        ValueError: Unsupported file format
-        FileNotFoundError: File missing
-        Various parsing errors depending on format
+        FileNotFoundError: If file doesn't exist
+        ValueError: If file format is not supported
+        yaml.YAMLError: If YAML parsing fails
+        json.JSONDecodeError: If JSON parsing fails
+        tomli.TOMLDecodeError: If TOML parsing fails
+
+    Supported Formats:
+        - YAML (.yaml, .yml)
+        - JSON (.json)
+        - TOML (.toml)
     """
     _, ext = os.path.splitext(file_path)
     

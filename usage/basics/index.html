@@ -534,6 +534,17 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Basic Concepts
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -543,6 +554,76 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration Management
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-file-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration File Formats
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structure-and-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Structure and Requirements
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#component-definitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Component Definitions
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -937,7 +1018,65 @@
 
 
 <h1 id="basic-concepts">Basic Concepts</h1>
-<p>Not yet available. But we plan to add stuff soon. Stay tuned!</p>
+<h2 id="configuration-management">Configuration Management</h2>
+<h3 id="overview">Overview</h3>
+<p>The <code>Config</code> component in Coho handles user input configurations by processing files (e.g., YAML, JSON), validating their content against predefined schemas, mapping the data to structured Python objects, and making these objects accessible to core packages. It supports reliable validation and efficient integration of configuration data.</p>
+<p>The configuration management process follows these steps:</p>
+<ol>
+<li><strong>Data Reading:</strong> Configuration file content is read.</li>
+<li><strong>Validation:</strong> Data is validated against a predefined schema.</li>
+<li><strong>Building Models:</strong> Validated data is converted into a Pydantic model.</li>
+<li><strong>Deployment:</strong> The model is accessible to other components in the codebase.</li>
+</ol>
+<h3 id="configuration-file-formats">Configuration File Formats</h3>
+<p>Coho currently supports <a href="https://yaml.org/">YAML</a>, <a href="https://www.json.org/">JSON</a>, and <a href="https://toml.io/">TOML</a> configuration file formats. If your configuration file doesn't match the expected schema, Coho will provide error messages to help you identify and fix any issues.</p>
+<h3 id="structure-and-requirements">Structure and Requirements</h3>
+<p>The experiment configuration includes the following sections:</p>
+<ul>
+<li><code>simulation</code>: Defines the components in the simulation, including wavefront, optic, sample, and detector.</li>
+<li><code>operator</code>: Defines the operators, including propagator and interactor.</li>
+<li><code>experiment</code>: Defines the experiment, including components and experiment states.</li>
+</ul>
+<h3 id="component-definitions">Component Definitions</h3>
+<p>Here's an example component configuration in YAML:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">simulation</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">wavefront</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_source&quot;</span>
+<span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;gaussian&quot;</span>
+<span class="w">    </span><span class="nt">properties</span><span class="p">:</span><span class="w"> </span>
+<span class="w">      </span><span class="nt">physical</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">amplitude</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">        </span><span class="nt">phase</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+<span class="w">        </span><span class="nt">energy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0</span>
+<span class="w">      </span><span class="nt">profile</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">sigma</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">256</span>
+<span class="w">        </span><span class="nt">width</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512</span>
+<span class="w">        </span><span class="nt">height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512</span>
+<span class="w">      </span><span class="nt">grid</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512</span>
+<span class="w">        </span><span class="nt">spacing</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0001</span>
+<span class="w">      </span><span class="nt">geometry</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">position</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">x</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+<span class="w">          </span><span class="nt">y</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+<span class="w">          </span><span class="nt">z</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+<span class="w">        </span><span class="nt">rotation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+</code></pre></div>
+<p>Each component needs an <code>id</code> as a unique identifier, a <code>model</code> to specify its behavior, and <code>properties</code> that include both component-specific properties (like <code>physical</code> and <code>profile</code>) as well as common properties (like <code>grid</code> and <code>geometry</code>).</p>
+<p>We can access the configuration in Python as follows:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">coho.config</span> <span class="kn">import</span> <span class="n">load_config</span>
+
+<span class="c1"># Load and validate configuration</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="s2">&quot;simulation_config.yaml&quot;</span><span class="p">)</span>
+
+<span class="c1"># Access typed configuration objects</span>
+<span class="n">simulation</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;simulation&quot;</span><span class="p">]</span>
+<span class="n">wavefront</span> <span class="o">=</span> <span class="n">simulation</span><span class="o">.</span><span class="n">wavefront</span>
+
+<span class="c1"># Properties are strongly typed</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Wavefront amplitude: </span><span class="si">{</span><span class="n">wavefront</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">physical</span><span class="o">.</span><span class="n">amplitude</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>For more details on component definitions, see the <a href="../configuration/">Configuration Guide</a> section.</p>
 
 
 

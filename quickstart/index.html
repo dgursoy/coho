@@ -1016,56 +1016,55 @@
 <p>This guide will help you get started with Coho quickly.</p>
 <h2 id="prerequisites">Prerequisites</h2>
 <ul>
-<li>Coho installed (see <a href="../installation/">Installation</a>)</li>
-<li>Basic knowledge of Python and YAML</li>
-<li>Basic knowledge of wavefront propagation and optical systems</li>
+<li>Coho package installed (see <a href="../installation/#installation">installation guide</a>)</li>
+<li>Familiarity with <a href="https://www.python.org/">Python</a> programming and <a href="https://yaml.org/">YAML</a> configuration files </li>
+<li>Understanding of <a href="../usage/basics/">basic concepts</a> in optical physics and wave propagation</li>
 </ul>
 <h2 id="basic-usage">Basic Usage</h2>
-<p>Coho enables users to design custom imaging setups through configuration files. Users can define wavefronts, optical elements like coded apertures, objects in the beam path, and detectors. Each component can be customized with specific properties, including wave characteristics, material details, and geometry, allowing for tailored imaging simulations.</p>
+<p>Coho enables users to design custom imaging setups through configuration files. Users can define wavefronts, optical elements like coded apertures, samples in the beam path, and detectors. Each component can be customized with specific properties, including wave characteristics, material details, and geometry, allowing for tailored imaging simulations.</p>
 <h3 id="create-a-configuration-file">Create a Configuration File</h3>
 <p>Here's an example configuration file that demonstrates a typical Coho simulation. It models a wavefront as it propagates through a system containing a coded aperture and a thin object, before being captured by a detector. The configuration includes descriptions of all necessary components, their positions, and physical properties. For detailed information about configuration options and parameters, see the <a href="../usage/configuration/">Configuration Guide</a>.</p>
 <p>Create a file named <code>myconfig.yaml</code> with the following content:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># myconfig.yaml - Example configuration for wavefront simulation</span>
 
-<span class="nt">workflow</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> component_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mywavefront&quot;</span><span class="p p-Indicator">,</span><span class="nt"> geometry</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> position</span><span class="p">:</span><span class="w"> </span><span class="nv">0.0</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"> </span><span class="p p-Indicator">}</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> component_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;myaperture&quot;</span><span class="p p-Indicator">,</span><span class="nt"> geometry</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> position</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"> </span><span class="p p-Indicator">}</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> component_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mysample&quot;</span><span class="p p-Indicator">,</span><span class="nt"> geometry</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> position</span><span class="p">:</span><span class="w"> </span><span class="nv">2.0</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"> </span><span class="p p-Indicator">}</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> component_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mydetector&quot;</span><span class="p p-Indicator">,</span><span class="nt"> geometry</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> position</span><span class="p">:</span><span class="w"> </span><span class="nv">100.0</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="nt">experiment</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> component_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_wavefront&quot;</span><span class="p p-Indicator">,</span><span class="nt"> geometry</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> position</span><span class="p">:</span><span class="w"> </span><span class="nv">0.0</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> component_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_aperture&quot;</span><span class="p p-Indicator">,</span><span class="nt"> geometry</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> position</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> component_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_sample&quot;</span><span class="p p-Indicator">,</span><span class="nt"> geometry</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> position</span><span class="p">:</span><span class="w"> </span><span class="nv">2.0</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> component_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_detector&quot;</span><span class="p p-Indicator">,</span><span class="nt"> geometry</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> position</span><span class="p">:</span><span class="w"> </span><span class="nv">100.0</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"> </span><span class="p p-Indicator">}</span>
 
-<span class="nt">propagator</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;fresnel&quot;</span><span class="w"> </span><span class="p p-Indicator">}</span>
-<span class="nt">interactor</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;thin_object&quot;</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="nt">operator</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">propagator</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;fresnel&quot;</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">interactor</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;thin_object&quot;</span><span class="w"> </span><span class="p p-Indicator">}</span>
 
-<span class="nt">wavefront</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mywavefront&quot;</span>
-<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;constant&quot;</span>
-<span class="w">  </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">amplitude</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
-<span class="w">    </span><span class="nt">phase</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
-<span class="w">    </span><span class="nt">energy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0</span>
-<span class="w">    </span><span class="nt">shape</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512</span>
-<span class="w">    </span><span class="nt">spacing</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0001</span>
+<span class="nt">simulation</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">wavefront</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_wavefront&quot;</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;constant&quot;</span>
+<span class="w">    </span><span class="nt">properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> amplitude</span><span class="p">:</span><span class="w"> </span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="nt"> phase</span><span class="p">:</span><span class="w"> </span><span class="nv">0.0</span><span class="p p-Indicator">,</span><span class="nt"> energy</span><span class="p">:</span><span class="w"> </span><span class="nv">10.0</span><span class="p p-Indicator">,</span><span class="nt"> shape</span><span class="p">:</span><span class="w"> </span><span class="nv">512</span><span class="p p-Indicator">,</span><span class="nt"> spacing</span><span class="p">:</span><span class="w"> </span><span class="nv">0.0001</span><span class="w"> </span><span class="p p-Indicator">}</span>
 
-<span class="nt">elements</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;myaperture&quot;</span>
+<span class="w">  </span><span class="nt">optic</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_aperture&quot;</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;coded_aperture&quot;</span>
-<span class="w">    </span><span class="nt">properties</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">material</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Au&quot;</span>
-<span class="w">      </span><span class="nt">density</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">19.3</span>
-<span class="w">      </span><span class="nt">thickness</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0001</span>
-<span class="w">      </span><span class="nt">bit_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">64</span>
+<span class="w">    </span><span class="nt">properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> material</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Au&quot;</span><span class="p p-Indicator">,</span><span class="nt"> density</span><span class="p">:</span><span class="w"> </span><span class="nv">19.3</span><span class="p p-Indicator">,</span><span class="nt"> thickness</span><span class="p">:</span><span class="w"> </span><span class="nv">0.0001</span><span class="p p-Indicator">,</span><span class="nt"> bit_size</span><span class="p">:</span><span class="w"> </span><span class="nv">64</span><span class="w"> </span><span class="p p-Indicator">}</span>
 
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mysample&quot;</span>
+<span class="w">  </span><span class="nt">sample</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_sample&quot;</span>
 <span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;custom_profile&quot;</span>
-<span class="w">    </span><span class="nt">properties</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">properties</span><span class="p">:</span><span class="w"> </span>
 <span class="w">      </span><span class="nt">material</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;C5H8O2&quot;</span>
 <span class="w">      </span><span class="nt">density</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.18</span>
 <span class="w">      </span><span class="nt">thickness</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.001</span>
 <span class="w">      </span><span class="nt">custom_profile</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;coho/resources/samples/lena.npy&quot;</span>
 
-<span class="nt">detector</span><span class="p">:</span><span class="w"> </span>
-<span class="w">  </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;mydetector&quot;</span>
-<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;integrating&quot;</span>
+<span class="w">  </span><span class="nt">detector</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_detector&quot;</span><span class="p p-Indicator">,</span><span class="nt"> type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;integrating&quot;</span><span class="w"> </span><span class="p p-Indicator">}</span>
+
+<span class="nt">optimization</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">objective</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_objective&quot;</span><span class="p p-Indicator">,</span><span class="nt"> type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;least_squares&quot;</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">solver</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_solver&quot;</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;gradient_descent&quot;</span>
+<span class="w">    </span><span class="nt">properties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> step_size</span><span class="p">:</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">,</span><span class="nt"> iterations</span><span class="p">:</span><span class="w"> </span><span class="nv">100</span><span class="w"> </span><span class="p p-Indicator">}</span>
 </code></pre></div>
 <p>You can download the example configuration file <a href="../resources/files/myconfig.yaml">here</a>.</p>
 <h3 id="create-a-python-script">Create a Python Script</h3>

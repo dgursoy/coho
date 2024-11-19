@@ -21,133 +21,83 @@ Attributes:
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Dict
+from typing import Optional, Union
 import numpy as np
 import xraylib
 from coho.core.simulation.wavefront import Wavefront
-from coho.core.simulation.element import Element
+from coho.core.simulation.optic import Optic
+from coho.core.simulation.sample import Sample
+from coho.config.models import InteractorProperties
 
+__all__ = [
+    'ThinObjectInteractor', 'ThickObjectInteractor'
+]
 
 class Interactor(ABC):
     """Base class for wavefront-element interactions."""
 
-    def __init__(self, id: Any, parameters: Optional[Dict[str, Any]] = None) -> None:
-        """Initialize interactor.
-
-        Args:
-            id: Unique identifier
-            parameters: Configuration dictionary
-        """
-        self.id = id
-        self.parameters = parameters or {}
+    def __init__(self, properties: Optional[InteractorProperties]):
+        """Initialize interactor."""
+        self.properties = properties
 
     @abstractmethod
-    def apply_interaction(self, wavefront: Wavefront, element: Element) -> Wavefront:
-        """Apply element effects to wavefront.
-
-        Args:
-            wavefront: Wavefront to modify
-            element: Optical element
-        """
+    def interact(self, wavefront: Wavefront, element: Union[Optic, Sample]) -> Wavefront:
+        """Interact element with wavefront."""
         pass
 
+    def forward(self, wavefront: Wavefront, element: Union[Optic, Sample]) -> Wavefront:
+        """Forward model (alias for interact)."""
+        return self.interact(wavefront, element)
+    
+    def adjoint(self, wavefront: Wavefront, element: Union[Optic, Sample]) -> Wavefront:
+        """Adjoint model."""
+        pass
 
 class ThinObjectInteractor(Interactor):
     """Thin optical element interaction handler."""
 
-    def compute_amplitude_attenuation(self, wavefront: Wavefront, element: Element) -> np.ndarray:
-        """Calculate amplitude attenuation.
-
-        Args:
-            wavefront: Wavefront to modify
-            element: Optical element
-
-        Returns:
-            Attenuation factors
+    def _compute_refractive_index(self, wavefront: Wavefront, element: Union[Optic, Sample]) -> float:
         """
-        beta = xraylib.Refractive_Index_Im(
-            element.material, 
-            wavefront.energy, 
-            element.density
-        )
-        return np.exp(
-            -wavefront.wavenumber * 
-            beta * 
-            element.thickness * 
-            element.pattern
-        )
-
-    def compute_phase_shift(self, wavefront: Wavefront, element: Element) -> np.ndarray:
-        """Calculate phase shift.
-
-        Args:
-            wavefront: Wavefront to modify
-            element: Optical element
-
-        Returns:
-            Phase shifts
+        Compute the complex refractive index of the optical element.
         """
-        delta = 1 - xraylib.Refractive_Index_Re(
-            element.material, 
-            wavefront.energy, 
-            element.density
+        return xraylib.Refractive_Index(
+            element.properties.physical.formula,
+            wavefront.properties.physical.energy,
+            element.properties.physical.density
         )
-        return -wavefront.wavenumber * delta * element.thickness * element.pattern
+    
+    def _compute_modulation(self, wavefront: Wavefront, element: Union[Optic, Sample]) -> float:
+        """Compute phase shift."""
+        refractive_index = self._compute_refractive_index(wavefront, element)
+        return wavefront.wavenumber * (refractive_index - 1) * element.properties.physical.thickness * element.profile
         
-    def apply_interaction(self, wavefront: Wavefront, element: Element) -> Wavefront:
-        """Apply amplitude and phase modifications.
+    def interact(self, wavefront: Wavefront, element: Union[Optic, Sample]) -> Wavefront:
+        """Apply amplitude and phase modifications."""
+        
+        # Compute refractive index
+        modulation = self._compute_modulation(wavefront, element)
+        
+        # Compute complex wavefront
+        wavefront.complex_wavefront *= np.exp(1j * modulation)
+        return wavefront
+    
+    def adjoint(self, wavefront: Wavefront, element: Union[Optic, Sample]) -> Wavefront:
+        """Reverse amplitude and phase modifications."""
+        modulation = self._compute_modulation(wavefront, element)
 
-        Args:
-            element: Optical element
-        """
-        attenuation = self.compute_amplitude_attenuation(wavefront, element)
-        phase_shift = self.compute_phase_shift(wavefront, element)
-
-        wavefront.amplitude *= attenuation
-        wavefront.phase += phase_shift
+        # The conjugate of the exponential term is applied to reverse the interaction
+        wavefront.complex_wavefront *= np.exp(-1j * modulation)
         return wavefront
 
 
 class ThickObjectInteractor(Interactor):
-    """Thick optical element interaction handler.
-    
-    Future implementation will include:
-    - Multi-slice propagation
-    - Internal structure effects
-    - Volume interactions
-    """
+    """Thick optical element interaction handler."""
 
-    def compute_amplitude(self, wavefront: Wavefront, element: Element) -> np.ndarray:
-        """Calculate multi-slice amplitude (not implemented).
-
-        Args:
-            wavefront: Wavefront to modify
-            element: Optical element
-
-        Raises:
-            NotImplementedError: Not implemented
-        """
-        raise NotImplementedError("Multi-slice propagation not implemented")
-
-    def compute_phase_shift(self, wavefront: Wavefront, element: Element) -> np.ndarray:
-        """Calculate thick object phase shift (not implemented).
-
-        Args:
-            wavefront: Wavefront to modify
-            element: Optical element
-
-        Raises:
-            NotImplementedError: Not implemented
-        """
-        raise NotImplementedError("Phase calculation not implemented")
-
-    def apply_interaction(self, wavefront: Wavefront, element: Element) -> Wavefront:
-        """Apply thick object effects (not implemented).
-
-        Args:
-            element: Optical element
-
-        Raises:
-            NotImplementedError: Not implemented
-        """
+    def interact(self, wavefront: Wavefront, element: Union[Optic, Sample]) -> Wavefront:
+        """Apply thick object effects (not implemented)."""
         raise NotImplementedError("Thick object interaction not implemented")
+    
+    def adjoint(self, wavefront: Wavefront, element: Union[Optic, Sample]) -> Wavefront:
+        """Reverse thick object effects (not implemented)."""
+        raise NotImplementedError("Thick object interaction not implemented")
+

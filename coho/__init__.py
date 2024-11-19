@@ -32,23 +32,12 @@ Modules:
 """
 
 # Configuration
-from .config import (
-    read_config,
-    load_config
-)
+from .config import *
 
 # Factories
-from .factories.simulation_factories import (
-    WavefrontFactory,
-    OpticFactory,
-    SampleFactory,
-    DetectorFactory
-)
-from .factories.operator_factories import (
-    PropagatorFactory,
-    InteractorFactory
-)
-from .factories.experiment_factories import ExperimentFactory
+from .factories.simulation_factories import *
+from .factories.operator_factories import *
+from .factories.experiment_factories import *
 
 # Core
 from .engine.simulation import Simulation

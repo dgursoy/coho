@@ -14,94 +14,101 @@ Workflow Stages:
     3. Detection and measurement
 """
 
-from typing import List, Dict
-from ..core.simulation.wavefront import Wavefront
-from ..core.simulation.optic import Optic
-from ..core.simulation.sample import Sample
-from ..core.simulation.detector import Detector
-from ..core.operator.propagator import Propagator
-from ..core.operator.interactor import Interactor
+from typing import Union
+from ..config.models import *
+from ..factories import *
 
+__all__ = ['Simulation']
 
 class Simulation:
     """Orchestrates experiment workflow."""
 
     def __init__(
         self, 
-        wavefront: Wavefront, 
-        propagator: Propagator,
-        optic: Optic, 
-        sample: Sample,
-        detector: Detector,
-        interactor: Interactor,
-        workflow: List[Dict]
-    ) -> None:
-        """Initialize engine components and workflow.
-        
-        Args:
-            wavefront: Initial field
-            propagator: Propagation method
-            optic: Optical element
-            sample: Sample
-            detector: Measurement device
-            interactor: Interaction handler
-            workflow: Component sequence:
-                [{"component_id": str, 
-                  "geometry": {"position": float}}, 
-                 ...]
+        simulation_config: SimulationConfig,
+        operator_config: OperatorConfig,
+        experiment_config: ExperimentConfig
+    ):
+        """Initialize simulation components and their states.
         """
-        # Core components
-        self.wavefront = wavefront
-        self.propagator = propagator
-        self.detector = detector
-        self.interactor = interactor
-        self.optic = optic
-        self.sample = sample
         
-        # Workflow and position tracking
-        self.workflow = workflow
-        self.current_position = 0.0
+        # Initialize components with IDs
+        self.wavefront = WavefrontFactory().create(
+            model=simulation_config.wavefront.model,
+            properties=simulation_config.wavefront.properties
+        )
+        self.optic = OpticFactory().create(
+            model=simulation_config.optic.model,
+            properties=simulation_config.optic.properties
+        )
+        self.sample = SampleFactory().create(
+            model=simulation_config.sample.model,
+            properties=simulation_config.sample.properties
+        )
+        self.detector = DetectorFactory().create(
+            model=simulation_config.detector.model,
+            properties=simulation_config.detector.properties
+        )
 
-    def propagate(self, target_position: float) -> None:
-        """Propagate wavefront to specified position.
-        
-        Args:
-            target_position: Absolute position to propagate to
-        """
-        distance = target_position - self.current_position
-        self.wavefront = self.propagator.propagate(self.wavefront, distance=distance)
-        self.current_position = target_position
+        # Initialize operators
+        self.propagator = PropagatorFactory().create(
+            model=operator_config.propagator.model,
+            properties=operator_config.propagator.properties
+        )
+        self.interactor = InteractorFactory().create(
+            model=operator_config.interactor.model,
+            properties=operator_config.interactor.properties
+        )
 
-    def process_stage(self, stage: Dict) -> None:
-        """Process a single workflow stage.
-        
-        Args:
-            stage: Workflow stage configuration
-        """
-        component_id = stage["component_id"]
-        position = stage["geometry"]["position"]
-        
-        # Move to component position
-        self.propagate(position)
-        
-        # Handle component interaction based on component ID matching
-        if component_id == self.optic.id:
-            self.wavefront = self.interactor.apply_interaction(self.wavefront, self.optic)
-        elif component_id == self.sample.id:
-            self.wavefront = self.interactor.apply_interaction(self.wavefront, self.sample)
-        elif component_id == self.detector.id:
-            self.detector.record_intensity(self.wavefront.amplitude)
-        # Skip wavefront component as it's the initial state
+        # Initialize current position
+        self.current_position = self.wavefront.properties.geometry.position.z
+
+        # Initialize experiment config
+        self.experiment_config = experiment_config
+
+        # Component map with type information
+        self.component_map = {
+            simulation_config.wavefront.id: {
+                'object': self.wavefront,
+                'model': 'wavefront'
+            },
+            simulation_config.optic.id: {
+                'object': self.optic,
+                'model': 'optic'
+            },
+            simulation_config.sample.id: {
+                'object': self.sample,
+                'model': 'sample'
+            },
+            simulation_config.detector.id: {
+                'object': self.detector,
+                'model': 'detector'
+            }
+        }
 
     def run(self) -> None:
         """Execute complete simulation workflow."""
-        for stage in self.workflow:
-            self.process_stage(stage)
-
-    def get_results(self) -> List[Dict]:
-        """Retrieve simulation results.
+        current_position = self.wavefront.properties.geometry.position.z
         
-        Returns:
-            List of detector measurements
-        """
-        return self.detector.acquire_images()
+        for component_id in self.experiment_config.properties.components:
+            component_info = self.component_map[component_id]
+            component = component_info['object']
+            target_position = component.properties.geometry.position.z
+            
+            # Propagate to element position if needed
+            self.wavefront = self.propagator.propagate(
+                self.wavefront, 
+                distance=target_position - current_position
+            )
+            current_position = target_position
+
+            # Interact with element if needed
+            if component_info['model'] in ('optic', 'sample'):
+                self.wavefront = self.interactor.interact(self.wavefront, component)
+            
+            # Detect if needed
+            if component_info['model'] == 'detector':
+                component.detect(self.wavefront)
+
+        # Return detector image
+        return self.detector.acquire()

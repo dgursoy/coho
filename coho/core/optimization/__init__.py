@@ -14,15 +14,10 @@ Components:
         magnitude_fitting: Amplitude-only matching
 """
 
-from .solvers import (
-    GradientDescent
-)
-from .objectives import (
-    LeastSquares
-)
+from .solver import *
+from .objective import *
 
 __all__ = [
     'GradientDescent',
     'LeastSquares',
-    'MagnitudeFitting'
 ]

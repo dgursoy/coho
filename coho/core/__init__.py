@@ -25,32 +25,10 @@ Modules:
         tomography: Tomographic reconstruction
 """
 
-from .simulation import (
-    IntegratingDetector,
-    PhotonCountingDetector,
-    CodedApertureOptic,
-    SlitApertureOptic,
-    CircleApertureOptic,
-    CustomProfileOptic,
-    CustomProfileSample,
-    ConstantWavefront,
-    GaussianWavefront,
-    RectangularWavefront
-)
-from .operator import (
-    FresnelPropagator,
-    FraunhoferPropagator,
-    ThinObjectInteractor,
-    ThickObjectInteractor
-)
-from .optimization import (
-    GradientDescent,
-    LeastSquares,
-)
-from .experiment import (
-    Holography,
-    Tomography
-)
+from .simulation import *
+from .operator import *
+from .optimization import *
+from .experiment import *
 
 __all__ = [
     # Simulation
@@ -75,7 +53,7 @@ __all__ = [
     'GradientDescent',
     'LeastSquares',
     
-    # Experiments
+    # Engines
     'Holography',
     'Tomography'
 ]

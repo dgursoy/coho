@@ -11,8 +11,8 @@ Classes:
 """
 
 from .base_factory import ComponentFactory
-from ..core.optimization.solvers import *
-from ..core.optimization.objectives import *
+from ..core.optimization.solver import *
+from ..core.optimization.objective import *
 from ..config.models import *
 
 __all__ = ['SolverFactory', 'ObjectiveFactory']
@@ -24,7 +24,6 @@ SOLVER_TYPES = {
 
 OBJECTIVE_TYPES = {
     'least_squares': LeastSquares,
-    'magnitude_fitting': MagnitudeFitting
 }
 
 

@@ -22,24 +22,10 @@ Components:
         rectangular: Rectangular amplitude profile
 """
 
-from .detector import (
-    IntegratingDetector,
-    PhotonCountingDetector
-)
-from .sample import (
-    CustomProfileSample
-)
-from .optic import (
-    CodedApertureOptic,
-    SlitApertureOptic,
-    CircleApertureOptic,
-    CustomProfileOptic
-)
-from .wavefront import (
-    ConstantWavefront,
-    GaussianWavefront,
-    RectangularWavefront
-)
+from .detector import *
+from .sample import *
+from .optic import *
+from .wavefront import *
 
 __all__ = [
     'IntegratingDetector',

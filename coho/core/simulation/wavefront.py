@@ -10,159 +10,103 @@ Classes:
     ConstantWavefront: Uniform amplitude and phase
     GaussianWavefront: Gaussian profile
     RectangularWavefront: Rectangular profile
-
-Constants:
-    PHYSICAL_CONSTANTS: Fundamental physics constants
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
 import numpy as np
+from coho.config.models import WavefrontProperties
 
-
-PHYSICAL_CONSTANTS = {
-    'PLANCK_CONSTANT': 6.58211928e-19,  # keV*s
-    'SPEED_OF_LIGHT': 299792458e+2,     # cm/s
-}
-
+__all__ = [
+    'ConstantWavefront',
+    'GaussianWavefront',
+    'RectangularWavefront'
+]
 
 class Wavefront(ABC):
     """Base class for optical wavefronts."""
-
-    def __init__(self, id: Any, parameters: Optional[Dict[str, Any]] = None):
-        """Initialize wavefront.
-
-        Args:
-            id: Unique identifier
-            parameters: Configuration dict
-                energy: Photon energy (keV)
-                shape: Grid size (pixels)
-                spacing: Grid spacing (cm)
-                amplitude: Base amplitude
-                phase: Base phase (rad)
+    
+    def __init__(self, properties: WavefrontProperties):
         """
-        parameters = parameters or {}
-        self.id = id
-        self.energy = parameters.get('physical', {}).get('energy')
-        self.shape = parameters.get('grid', {}).get('size')
-        self.spacing = parameters.get('grid', {}).get('spacing')
-        
-        self.amplitude = self.generate_amplitude(parameters)
-        self.phase = self.generate_phase(parameters)
+        Initialize the wavefront with specified properties.
+        """
+        self.properties = properties
+        self._initialize_wavefront()
+
+    def _initialize_wavefront(self):
+        """Initialize both amplitude and phase patterns."""
+        base_profile = self.generate_profile()
+        amplitude_profile = base_profile * self.properties.physical.amplitude
+        phase_profile = base_profile * self.properties.physical.phase
+        self.complex_wavefront = amplitude_profile * np.exp(1j * phase_profile)
 
     @property
     def wavelength(self) -> float:
-        """Calculate wavelength.
-
-        Returns:
-            Wavelength in cm
-        """
-        return (2 * np.pi * PHYSICAL_CONSTANTS['PLANCK_CONSTANT'] * 
-                PHYSICAL_CONSTANTS['SPEED_OF_LIGHT'] / self.energy)
+        """Wavelength derived from energy in keV."""
+        return 1.23984193e-7 / self.properties.physical.energy
 
     @property
     def wavenumber(self) -> float:
-        """Calculate wavenumber.
-
-        Returns:
-            Wavenumber in cm⁻¹
-        """
+        """Wavenumber (2π divided by wavelength)."""
         return 2 * np.pi / self.wavelength
 
-    def generate_amplitude(self, parameters: Dict[str, Any]) -> np.ndarray:
-        """Generate amplitude profile.
+    @property
+    def size(self) -> int:
+        """Grid size for the wavefront."""
+        return self.properties.grid.size
 
-        Args:
-            parameters: Amplitude settings
-
-        Returns:
-            Scaled amplitude array
-        """
-        amplitude = parameters.get('physical', {}).get("amplitude")
-        return self.generate_pattern(parameters) * amplitude
-
-    def generate_phase(self, parameters: Dict[str, Any]) -> np.ndarray:
-        """Generate phase profile.
-
-        Args:
-            parameters: Phase settings
-
-        Returns:
-            Scaled phase array
-        """
-        phase = parameters.get('physical', {}).get("phase")
-        return self.generate_pattern(parameters) * phase
+    @property
+    def spacing(self) -> float:
+        """Grid spacing for the wavefront."""
+        return self.properties.grid.spacing
 
     @abstractmethod
-    def generate_pattern(self, parameters: Dict[str, Any]) -> np.ndarray:
-        """Generate base pattern.
-
-        Args:
-            parameters: Pattern settings
-
-        Returns:
-            Pattern array
-        """
+    def generate_profile(self) -> np.ndarray:
+        """Generate the base pattern for the wavefront."""
         pass
 
 
 class ConstantWavefront(Wavefront):
-    """Uniform amplitude and phase wavefront."""
+    """Wavefront with uniform amplitude and phase."""
 
-    def generate_pattern(self, parameters: Dict[str, Any]) -> np.ndarray:
-        """Generate uniform pattern.
-
-        Args:
-            parameters: Pattern settings
-
-        Returns:
-            Unit array
-        """
-        return np.ones((self.shape, self.shape))
+    def generate_profile(self) -> np.ndarray:
+        """Generate a uniform profile."""
+        return np.ones((self.size, self.size))
 
 
 class GaussianWavefront(Wavefront):
-    """Gaussian profile wavefront."""
+    """Wavefront with a Gaussian amplitude profile."""
 
-    def generate_pattern(self, parameters: Dict[str, Any]) -> np.ndarray:
-        """Generate Gaussian pattern.
-
-        Args:
-            parameters: Pattern settings
-                sigma: Standard deviation
-                shape: Grid size
+    def generate_profile(self) -> np.ndarray:
+        """
+        Generate a Gaussian profile.
 
         Returns:
-            Gaussian array
+            Gaussian distribution over the grid.
         """
-        sigma = parameters.get('profile', {}).get("sigma")
+        sigma = self.properties.profile.sigma
 
-        x = np.linspace(-self.shape/2, self.shape/2, self.shape)
-        y = np.linspace(-self.shape/2, self.shape/2, self.shape)
+        x = np.linspace(-self.size / 2, self.size / 2, self.size)
+        y = np.linspace(-self.size / 2, self.size / 2, self.size)
         xx, yy = np.meshgrid(x, y)
         return np.exp(-((xx**2 + yy**2) / (2 * sigma**2)))
 
 
 class RectangularWavefront(Wavefront):
-    """Rectangular profile wavefront."""
+    """Wavefront with a rectangular amplitude profile."""
 
-    def generate_pattern(self, parameters: Dict[str, Any]) -> np.ndarray:
-        """Generate rectangular pattern.
-
-        Args:
-            parameters: Pattern settings
-                width: Rectangle width
-                height: Rectangle height
-                shape: Grid size
+    def generate_profile(self) -> np.ndarray:
+        """
+        Generate a rectangular profile.
 
         Returns:
-            Binary rectangle array
+            np.ndarray: Binary rectangle array over the grid.
         """
-        width = parameters.get('wave', {}).get("width")
-        height = parameters.get('wave', {}).get("height")
+        width = self.properties.profile.width
+        height = self.properties.profile.height
 
-        pattern = np.zeros((self.shape, self.shape))
-        x_start = (self.shape - width) // 2
-        y_start = (self.shape - height) // 2
+        pattern = np.zeros((self.size, self.size))
+        x_start = (self.size - width) // 2
+        y_start = (self.size - height) // 2
         pattern[y_start:y_start + height, x_start:x_start + width] = 1.0
         return pattern
+

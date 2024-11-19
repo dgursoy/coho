@@ -35,7 +35,8 @@ __all__ = [
     'WavefrontPhysical', 'WavefrontProfile', 'WavefrontProperties', 'Wavefront',
     'OpticPhysical', 'OpticProfile', 'OpticProperties', 'Optic',
     'SamplePhysical', 'SampleProfile', 'SampleProperties', 'Sample',
-    'DetectorProperties', 'Detector', 'SimulationConfig'
+    'DetectorProperties', 'Detector', 
+    'SimulationConfig'
 ]
 
 class WavefrontPhysical(BaseModel):

@@ -15,13 +15,19 @@ from typing import List, Dict
 from pydantic import BaseModel
 
 __all__ = [
-    'ExperimentProperties', 'ExperimentConfig'
+    'ExperimentProperties', 'Experiment', 
+    'ExperimentConfig'
 ]
 
 class ExperimentProperties(BaseModel):
-    components: List[str]
+    components: List[str] = []
+
+class Experiment(BaseModel):
+    id: str
+    model: str
+    properties: ExperimentProperties = ExperimentProperties()
 
 class ExperimentConfig(BaseModel):
     id: str
     model: str
-    properties: ExperimentProperties = ExperimentProperties(components=[])
+    properties: ExperimentProperties = ExperimentProperties()

@@ -16,7 +16,9 @@ from typing import Dict, Any
 from pydantic import BaseModel
 
 __all__ = [
-    'SolverProperties', 'Solver', 'Objective', 'OptimizationConfig'
+    'SolverProperties', 'Solver',
+    'ObjectiveProperties', 'Objective',
+    'OptimizationConfig',
 ]
 
 class SolverProperties(BaseModel):
@@ -28,10 +30,13 @@ class Solver(BaseModel):
     model: str
     properties: SolverProperties = SolverProperties()
 
+class ObjectiveProperties(BaseModel):
+    pass
+
 class Objective(BaseModel):
     id: str
     model: str
-    properties: Dict[str, Any] = {}
+    properties: ObjectiveProperties = ObjectiveProperties()
 
 class OptimizationConfig(BaseModel):
     objective: Objective

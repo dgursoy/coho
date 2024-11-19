@@ -15,18 +15,26 @@ from typing import Optional, Dict, Any
 from pydantic import BaseModel
 
 __all__ = [
-    'Interactor', 'Propagator', 'OperatorConfig'
+    'Interactor', 'InteractorProperties', 
+    'Propagator', 'PropagatorProperties',
+    'OperatorConfig'
 ]
+
+class InteractorProperties(BaseModel):
+    pass
 
 class Interactor(BaseModel):
     id: Optional[str] = None
     model: str
-    properties: Dict[str, Any] = {}
+    properties: InteractorProperties = InteractorProperties()
+
+class PropagatorProperties(BaseModel):
+    pass
 
 class Propagator(BaseModel):
     id: Optional[str] = None
     model: str
-    properties: Dict[str, Any] = {}
+    properties: PropagatorProperties = PropagatorProperties()
 
 class OperatorConfig(BaseModel):
     interactor: Interactor

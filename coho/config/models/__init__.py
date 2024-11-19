@@ -33,24 +33,24 @@ __all__ = [
     'Grid', 'Geometry', 'Position',
     
     # Simulation models
-    'Wavefront', 'WavefrontProperties', 'WavefrontPhysical', 'WavefrontProfile',
-    'Optic', 'OpticProperties', 'OpticPhysical', 'OpticProfile',
-    'Sample', 'SampleProperties', 'SamplePhysical', 'SampleProfile',
-    'Detector', 'DetectorProperties',
+    'WavefrontPhysical', 'WavefrontProfile', 'WavefrontProperties', 'Wavefront',
+    'OpticPhysical', 'OpticProfile', 'OpticProperties', 'Optic',
+    'SamplePhysical', 'SampleProfile', 'SampleProperties', 'Sample',
+    'DetectorProperties', 'Detector', 
     'SimulationConfig',
     
     # Operator models
-    'Interactor', 
-    'Propagator', 
+    'Interactor', 'InteractorProperties',
+    'Propagator', 'PropagatorProperties',
     'OperatorConfig',
     
     # Experiment models
-    'ExperimentProperties', 
+    'ExperimentProperties', 'Experiment', 
     'ExperimentConfig',
     
     # Optimization models
-    'Solver', 'SolverProperties', 
-    'Objective', 
-    'OptimizationConfig'
+    'SolverProperties', 'Solver',
+    'ObjectiveProperties', 'Objective',
+    'OptimizationConfig',
 ]
 

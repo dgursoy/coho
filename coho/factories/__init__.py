@@ -24,21 +24,10 @@ Modules:
 """
 
 from .base_factory import ComponentFactory
-from .simulation_factories import (
-    DetectorFactory,
-    OpticFactory,
-    SampleFactory,
-    WavefrontFactory
-)
-from .operator_factories import (
-    PropagatorFactory,
-    InteractorFactory
-)
-from .optimization_factories import (
-    SolverFactory,
-    ObjectiveFactory
-)
-from .experiment_factories import ExperimentFactory
+from .simulation_factories import *
+from .operator_factories import *
+from .optimization_factories import *
+from .experiment_factories import *
 
 __all__ = [
     'ComponentFactory',
@@ -48,7 +37,6 @@ __all__ = [
     'WavefrontFactory',
     'PropagatorFactory',
     'InteractorFactory',
-    'GradientFactory',
     'SolverFactory',
     'ObjectiveFactory',
     'ExperimentFactory'

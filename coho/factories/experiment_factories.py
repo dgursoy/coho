@@ -14,12 +14,11 @@ Types:
     tomography: Tomographic reconstruction experiments
 """
 
-from ..core.experiment import (
-    Holography,
-    Tomography
-)
 from .base_factory import ComponentFactory
+from ..core.experiment import *
+from ..config.models import *
 
+__all__ = ['ExperimentFactory']
 
 # Component type mappings
 EXPERIMENT_TYPES = {
@@ -27,7 +26,7 @@ EXPERIMENT_TYPES = {
     'tomography': Tomography
 }
 
-class ExperimentFactory(ComponentFactory):
+class ExperimentFactory(ComponentFactory[ExperimentProperties, Experiment]):
     """Factory for experiment template creation."""
     def __init__(self):
         super().__init__(EXPERIMENT_TYPES)

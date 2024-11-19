@@ -19,16 +19,12 @@ Types:
         thick_object: Multi-slice beam propagation
 """
 
-from ..core.operator.propagator import (
-    FresnelPropagator,
-    FraunhoferPropagator
-)
-from ..core.operator.interactor import (
-    ThinObjectInteractor,
-    ThickObjectInteractor
-)
 from .base_factory import ComponentFactory
+from ..core.operator.propagator import *
+from ..core.operator.interactor import *
+from ..config.models import *
 
+__all__ = ['PropagatorFactory', 'InteractorFactory']
 
 # Component type mappings
 PROPAGATOR_TYPES = {
@@ -42,13 +38,13 @@ INTERACTOR_TYPES = {
 }
 
 
-class PropagatorFactory(ComponentFactory):
+class PropagatorFactory(ComponentFactory[PropagatorProperties, Propagator]):
     """Factory for propagator creation."""
     def __init__(self):
         super().__init__(PROPAGATOR_TYPES)
 
 
-class InteractorFactory(ComponentFactory):
+class InteractorFactory(ComponentFactory[InteractorProperties, Interactor]):
     """Factory for interactor creation."""
     def __init__(self):
         super().__init__(INTERACTOR_TYPES)

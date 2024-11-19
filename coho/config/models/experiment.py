@@ -14,6 +14,10 @@ Classes:
 from typing import List, Dict
 from pydantic import BaseModel
 
+__all__ = [
+    'ExperimentProperties', 'ExperimentConfig'
+]
+
 class ExperimentProperties(BaseModel):
     components: List[str]
 

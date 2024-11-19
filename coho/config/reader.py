@@ -23,12 +23,12 @@ import os
 from .types import ConfigContent
 from typing import Literal
 
-# Supported encodings for file reading
-EncodingType = Literal['utf-8', 'ascii', 'latin-1']
-
 __all__ = [
     'read_config',
 ]
+
+# Supported encodings for file reading
+EncodingType = Literal['utf-8', 'ascii', 'latin-1']
 
 def read_config(file_path: PathLike, encoding: EncodingType = 'utf-8') -> ConfigContent:
     """Read configuration from a file in any supported format.

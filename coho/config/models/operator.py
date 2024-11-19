@@ -14,6 +14,10 @@ Classes:
 from typing import Optional, Dict, Any
 from pydantic import BaseModel
 
+__all__ = [
+    'Interactor', 'Propagator', 'OperatorConfig'
+]
+
 class Interactor(BaseModel):
     id: Optional[str] = None
     model: str

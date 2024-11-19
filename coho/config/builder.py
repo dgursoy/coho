@@ -19,6 +19,11 @@ from .models.operator import OperatorConfig
 from .models.experiment import ExperimentConfig
 from .models.optimization import OptimizationConfig
 
+__all__ = [
+    'build_config',
+    'build_section',
+]
+
 def get_model_mapping() -> dict:
     """Returns the mapping of configuration sections to Pydantic models."""
     return {

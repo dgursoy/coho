@@ -13,6 +13,10 @@ Classes:
 
 from pydantic import BaseModel
 
+__all__ = [
+    'Position', 'Geometry', 'Grid'
+]
+
 class Position(BaseModel):
     x: float = 0.0
     y: float = 0.0

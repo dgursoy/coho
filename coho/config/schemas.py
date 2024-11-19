@@ -23,6 +23,12 @@ from os import PathLike
 from .reader import read_config
 from .types import SchemaDict, SchemaRegistry
 
+__all__ = [
+    'register_schemas',
+    'register_schema',
+    'get_schema',
+]
+
 
 # Define directory containing schema files
 _SCHEMA_DIR = Path(__file__).resolve().parent / "schemas"
@@ -65,7 +71,7 @@ def register_schema(name: str, schema_path: PathLike) -> SchemaDict:
     Raises:
         ValueError: If the schema is empty or invalid
     """
-    print(f"Reading schema from {schema_path}")
+    
     raw_schema = read_config(schema_path)
     if not raw_schema or name not in raw_schema:
         raise ValueError(f"Invalid schema at {schema_path}")

@@ -23,28 +23,10 @@ Model Categories:
 """
 
 from .common import Grid, Geometry, Position
-from .simulation import (
-    Wavefront, WavefrontProperties, WavefrontPhysical, WavefrontProfile,
-    Optic, OpticProperties, OpticPhysical, OpticProfile,
-    Sample, SampleProperties, SamplePhysical, SampleProfile,
-    Detector, DetectorProperties,
-    SimulationConfig
-)
-from .operator import (
-    Interactor,
-    Propagator,
-    OperatorConfig
-)
-from .experiment import (
-    ExperimentProperties,
-    ExperimentConfig
-)
-from .optimization import (
-    SolverProperties,
-    Solver,
-    Objective,
-    OptimizationConfig
-)
+from .simulation import *
+from .operator import *
+from .experiment import *
+from .optimization import *
 
 __all__ = [
     # Common models

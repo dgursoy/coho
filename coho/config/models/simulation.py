@@ -31,6 +31,13 @@ from typing import Optional
 from pydantic import BaseModel
 from .common import Grid, Geometry
 
+__all__ = [
+    'WavefrontPhysical', 'WavefrontProfile', 'WavefrontProperties', 'Wavefront',
+    'OpticPhysical', 'OpticProfile', 'OpticProperties', 'Optic',
+    'SamplePhysical', 'SampleProfile', 'SampleProperties', 'Sample',
+    'DetectorProperties', 'Detector', 'SimulationConfig'
+]
+
 class WavefrontPhysical(BaseModel):
     amplitude: float = 1.0
     phase: float = 0.0

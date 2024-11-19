@@ -40,12 +40,17 @@ __all__ = [
     'SimulationConfig',
     
     # Operator models
-    'Interactor', 'Propagator', 'OperatorConfig',
+    'Interactor', 
+    'Propagator', 
+    'OperatorConfig',
     
     # Experiment models
-    'WorkflowStep', 'ExperimentProperties', 'ExperimentConfig',
+    'ExperimentProperties', 
+    'ExperimentConfig',
     
     # Optimization models
-    'SolverProperties', 'Solver', 'Objective', 'OptimizationConfig'
+    'Solver', 'SolverProperties', 
+    'Objective', 
+    'OptimizationConfig'
 ]
 

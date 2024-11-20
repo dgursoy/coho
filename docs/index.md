@@ -1,12 +1,12 @@
 # Welcome to Coho
 
-[Coho](https://github.com/dgursoy/coho) is a Python-based platform for coded holographic imaging with coded apertures and coherent light sources. It offers advanced tools for modeling, simulating, and analyzing these systems efficiently.
+[Coho](https://github.com/dgursoy/coho) is a Python-based platform designed for simulating coded holography experiments. It provides a comprehensive set of tools for modeling, simulating, and analyzing holographic imaging systems that use coded apertures and coherent light sources.
 
 ## Key Features
 
-* Fast and efficient simulations and reconstructions for holography
-* Support for diverse coding patterns and holography configurations
-* Comprehensive and modular tools for analysis and customization
+* Extensible and modular architecture
+* Customizable experimental configurations
+* Developer-friendly with comprehensive examples
 
 ## Getting Started Guide
 

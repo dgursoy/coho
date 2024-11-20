@@ -1,12 +1,10 @@
 # Quick Start
 
-This guide will help you get started with Coho quickly.
-
 ## Prerequisites
 
 - Coho package installed (see [installation guide](installation.md#installation))
 - Familiarity with [Python](https://www.python.org/) programming and [YAML](https://yaml.org/) configuration files 
-- Understanding of [basic concepts](usage/basics.md) in optical physics and wave propagation
+- Understanding of [basic components](usage/components/index.md) in optical physics and wave propagation
 
 ## Basic Usage
 
@@ -14,7 +12,7 @@ Coho enables users to design custom imaging setups through configuration files. 
 
 ### Create a Configuration File
 
-Here's an example configuration file that demonstrates a typical Coho simulation. It models a wavefront as it propagates through a system containing a coded aperture and a thin object, before being captured by a detector. The configuration includes descriptions of all necessary components, their positions, and physical properties. For detailed information about configuration options and parameters, see the [Configuration Guide](usage/configuration.md).
+Here’s an example configuration file for a typical holography setup. This setup models a wavefront propagating through a system with a coded aperture and a thin object before being recorded by a detector. The configuration specifies all essential components, including their positions and physical properties. For a detailed explanation of configuration options and parameters, refer to the [Configuration Guide](usage/configuration.md).
 
 Create a file named `myconfig.yaml` with the following content:
 

@@ -1,13 +1,13 @@
 # Installation
 
-Here are the step-by-step instructions for installing Coho.
-
 ## Requirements
 
-- **Python**: 3.12 or higher
-- **Dependencies**: Managed via Poetry
+- [**Python**](https://www.python.org/downloads/): 3.12 or higher
+- **Dependencies**: Managed via [Poetry](https://python-poetry.org/)
 
 ## Installing from PyPI
+
+> **Note:** Coho is not available on PyPI yet.
 
 You can install Coho directly from PyPI using `pip`:
 

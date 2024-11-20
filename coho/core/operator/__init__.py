@@ -17,10 +17,12 @@ Components:
 
 from .propagator import *
 from .interactor import *
+from .forward import *
 
 __all__ = [
     'FresnelPropagator',
     'FraunhoferPropagator',
     'ThinObjectInteractor',
-    'ThickObjectInteractor'
+    'ThickObjectInteractor',
+    'Holography',
 ]

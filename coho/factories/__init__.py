@@ -38,4 +38,5 @@ __all__ = [
     'InteractorFactory',
     'SolverFactory',
     'ObjectiveFactory',
+    'ForwardFactory',
 ]

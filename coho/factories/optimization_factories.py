@@ -21,10 +21,12 @@ __all__ = ['SolverFactory', 'ObjectiveFactory']
 class SolverFactory(ComponentFactory[SolverProperties, Solver]):
     """Factory for optimization solver creation."""
     def __init__(self):
-        super().__init__('optimization', 'solver')
+        super().__init__()
+        self.register('gradient_descent', GradientDescent)
 
 
 class ObjectiveFactory(ComponentFactory[ObjectiveProperties, Objective]):
     """Factory for objective function creation."""
     def __init__(self):
-        super().__init__('optimization', 'objective')
+        super().__init__()
+        self.register('least_squares', LeastSquares)

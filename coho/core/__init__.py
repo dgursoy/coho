@@ -47,6 +47,7 @@ __all__ = [
     'FraunhoferPropagator',
     'ThinObjectInteractor',
     'ThickObjectInteractor',
+    'Holography',
     
     # Optimization
     'GradientDescent',

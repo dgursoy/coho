@@ -40,7 +40,7 @@ from .factories.operator_factories import *
 from .factories.optimization_factories import *
 
 # Core
-from .engine.simulation import Simulation
+from .core.operator.forward import Holography
 
 __all__ = [
     # Configuration
@@ -53,6 +53,7 @@ __all__ = [
     'DetectorFactory',
     'PropagatorFactory',
     'InteractorFactory',
+    'ForwardFactory',
     # Core
-    'Simulation',
+    'Holography',
 ]

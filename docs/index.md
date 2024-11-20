@@ -1,4 +1,4 @@
-# Welcome to Coho Documentation
+# Welcome to Coho
 
 Coho is a Python-based platform designed for simulating coded holography experiments. It provides a comprehensive set of tools for modeling, simulating, and analyzing holographic imaging systems that use coded apertures and coherent light sources.
 

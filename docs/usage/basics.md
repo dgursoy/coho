@@ -59,13 +59,13 @@ Each component needs an `id` as a unique identifier, a `model` to specify its be
 We can access the configuration in Python as follows:
 
 ```python
-from coho.config import load_config
+from coho import load_config
 
-# Load and validate configuration
-config = load_config("simulation_config.yaml")
+# Build data classes from configuration file
+config = load_config("snippets/test_config.yaml")
 
-# Access typed configuration objects
-simulation = config["simulation"]
+# Access data classes
+simulation = config.simulation
 wavefront = simulation.wavefront
 
 # Properties are strongly typed

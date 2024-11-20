@@ -27,7 +27,6 @@ from .base_factory import ComponentFactory
 from .simulation_factories import *
 from .operator_factories import *
 from .optimization_factories import *
-from .experiment_factories import *
 
 __all__ = [
     'ComponentFactory',
@@ -39,5 +38,4 @@ __all__ = [
     'InteractorFactory',
     'SolverFactory',
     'ObjectiveFactory',
-    'ExperimentFactory'
 ]

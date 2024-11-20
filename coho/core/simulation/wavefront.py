@@ -109,4 +109,3 @@ class RectangularWavefront(Wavefront):
         y_start = (self.size - height) // 2
         pattern[y_start:y_start + height, x_start:x_start + width] = 1.0
         return pattern
-

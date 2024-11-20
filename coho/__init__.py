@@ -37,7 +37,7 @@ from .config import *
 # Factories
 from .factories.simulation_factories import *
 from .factories.operator_factories import *
-from .factories.experiment_factories import *
+from .factories.optimization_factories import *
 
 # Core
 from .engine.simulation import Simulation
@@ -53,7 +53,6 @@ __all__ = [
     'DetectorFactory',
     'PropagatorFactory',
     'InteractorFactory',
-    'ExperimentFactory',
     # Core
     'Simulation',
 ]

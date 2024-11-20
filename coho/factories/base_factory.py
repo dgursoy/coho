@@ -7,7 +7,8 @@ Classes:
 """
 
 from abc import ABC
-from typing import TypeVar, Generic, Type, Mapping, Optional
+from typing import TypeVar, Generic, Type
+from .registry import MODEL_REGISTRY
 
 __all__ = ['ComponentFactory']
 
@@ -19,24 +20,17 @@ class ComponentFactory(ABC, Generic[P, T]):
     """Abstract base factory for creating component instances.
     
     Attributes:
-        component_types: Mapping of component names to their classes.
+        domain: The domain of the component.
+        component_type: The type of the component.
     """
     
-    def __init__(self, component_types: Mapping[str, Type[T]]):
-        """Initialize with component type mapping.
+    def __init__(self, domain: str, component_type: str):
+        """Initialize with domain and component type.
         """
-        self.component_types = component_types
+        self.domain = domain
+        self.component_type = component_type
     
     def create(self, model: str, properties: P) -> T:
         """Create a component instance."""
-        component_type = model.lower()
-        
-        if component_type not in self.component_types:
-            valid_types = list(self.component_types.keys())
-            raise ValueError(
-                f"Unsupported type: {component_type}. "
-                f"Valid types are: {valid_types}"
-            )
-            
-        component_class = self.component_types[component_type]
+        component_class = MODEL_REGISTRY[self.domain][self.component_type][model.lower()]
         return component_class(properties) 

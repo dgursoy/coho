@@ -17,23 +17,14 @@ from ..config.models import *
 
 __all__ = ['SolverFactory', 'ObjectiveFactory']
 
-# Component type mappings
-SOLVER_TYPES = {
-    'gradient_descent': GradientDescent
-}
-
-OBJECTIVE_TYPES = {
-    'least_squares': LeastSquares,
-}
-
 
 class SolverFactory(ComponentFactory[SolverProperties, Solver]):
     """Factory for optimization solver creation."""
     def __init__(self):
-        super().__init__(SOLVER_TYPES)
+        super().__init__('optimization', 'solver')
 
 
 class ObjectiveFactory(ComponentFactory[ObjectiveProperties, Objective]):
     """Factory for objective function creation."""
     def __init__(self):
-        super().__init__(OBJECTIVE_TYPES)
+        super().__init__('optimization', 'objective')

@@ -74,7 +74,7 @@ class ThinObjectInteractor(Interactor):
     def interact(self, wavefront: Wavefront, element: Union[Optic, Sample]) -> Wavefront:
         """Apply amplitude and phase modifications."""
         
-        # Compute refractive index
+        # Compute refractive index modulation
         modulation = self._compute_modulation(wavefront, element)
         
         # Compute complex wavefront

@@ -26,25 +26,14 @@ from ..config.models import *
 
 __all__ = ['PropagatorFactory', 'InteractorFactory']
 
-# Component type mappings
-PROPAGATOR_TYPES = {
-    'fresnel': FresnelPropagator,
-    'fraunhofer': FraunhoferPropagator
-}
-
-INTERACTOR_TYPES = {
-    'thin_object': ThinObjectInteractor,
-    'thick_object': ThickObjectInteractor
-}
-
 
 class PropagatorFactory(ComponentFactory[PropagatorProperties, Propagator]):
     """Factory for propagator creation."""
     def __init__(self):
-        super().__init__(PROPAGATOR_TYPES)
+        super().__init__('operator', 'propagator')
 
 
 class InteractorFactory(ComponentFactory[InteractorProperties, Interactor]):
     """Factory for interactor creation."""
     def __init__(self):
-        super().__init__(INTERACTOR_TYPES)
+        super().__init__('operator', 'interactor')

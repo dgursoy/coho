@@ -21,48 +21,27 @@ from ..config.models import *
 
 __all__ = ['DetectorFactory', 'OpticFactory', 'SampleFactory', 'WavefrontFactory']
 
-WAVEFRONT_TYPES = {
-    'gaussian': GaussianWavefront,
-    'constant': ConstantWavefront,
-    'rectangular': RectangularWavefront
-}
-
-DETECTOR_TYPES = {
-    'photon_counting': PhotonCountingDetector,
-    'integrating': IntegratingDetector
-}
-
-SAMPLE_TYPES = {
-    'custom_profile': CustomProfileSample
-}
-
-OPTIC_TYPES = {
-    'coded_aperture': CodedApertureOptic,
-    'slit_aperture': SlitApertureOptic,
-    'circle_aperture': CircleApertureOptic,
-    'custom_profile': CustomProfileOptic
-}
 
 class DetectorFactory(ComponentFactory[DetectorProperties, Detector]):
     """Factory for detector creation."""
     def __init__(self):
-        super().__init__(DETECTOR_TYPES)
+        super().__init__('simulation', 'detector')
 
 
 class OpticFactory(ComponentFactory[OpticProperties, Optic]):
     """Factory for optical component creation."""
     def __init__(self):
-        super().__init__(OPTIC_TYPES)
+        super().__init__('simulation', 'optic')
 
 
 class SampleFactory(ComponentFactory[SampleProperties, Sample]):
     """Factory for sample creation."""
     def __init__(self):
-        super().__init__(SAMPLE_TYPES)
+        super().__init__('simulation', 'sample')
 
 
 class WavefrontFactory(ComponentFactory[WavefrontProperties, Wavefront]):
     """Factory for wavefront creation."""
     def __init__(self):
-        super().__init__(WAVEFRONT_TYPES)
+        super().__init__('simulation', 'wavefront')
 

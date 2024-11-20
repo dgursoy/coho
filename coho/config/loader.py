@@ -25,7 +25,7 @@ def load_config(source: Union[str, Path, Dict[str, Any]]) -> Dict[str, Any]:
         source: Configuration source (file path or dict)
         
     Returns:
-        Dictionary of validated configuration objects
+        Configuration object
         
     Raises:
         ValueError: Invalid configuration
@@ -43,12 +43,5 @@ def load_config(source: Union[str, Path, Dict[str, Any]]) -> Dict[str, Any]:
 
     # Build config objects
     config_objects = build_config(raw_config)
-    errors = {name: obj for name, (success, obj) in config_objects.items() if not success}
-    if errors:
-        raise ValueError(
-            "Failed to build configuration:\n" +
-            "\n".join(f"Section '{name}': {error}" for name, error in errors.items())
-        )
 
-    # If no errors, return the successful objects directly
-    return {name: obj for name, (_, obj) in config_objects.items()}
+    return config_objects

@@ -27,6 +27,7 @@ from .simulation import *
 from .operator import *
 from .experiment import *
 from .optimization import *
+from .base import *
 
 __all__ = [
     # Common models
@@ -52,5 +53,8 @@ __all__ = [
     'SolverProperties', 'Solver',
     'ObjectiveProperties', 'Objective',
     'OptimizationConfig',
+
+    # Base model
+    'Config',
 ]
 

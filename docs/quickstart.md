@@ -19,47 +19,80 @@ Here's an example configuration file that demonstrates a typical Coho simulation
 Create a file named `myconfig.yaml` with the following content:
 
 ```yaml
-# myconfig.yaml - Example configuration for wavefront simulation
-
 experiment:
-  - { component_id: "my_wavefront", geometry: { position: 0.0 } }
-  - { component_id: "my_aperture", geometry: { position: 1.0 } }
-  - { component_id: "my_sample", geometry: { position: 2.0 } }
-  - { component_id: "my_detector", geometry: { position: 100.0 } }
+  id: "my_experiment"
+  model: "holography"
+  properties:
+    components:
+      - "my_wavefront"
+      - "my_aperture"
+      - "my_sample"
+      - "my_detector"
 
-operator:
-  propagator: { type: "fresnel" }
-  interactor: { type: "thin_object" }
 
 simulation:
   wavefront:
-    id: "my_wavefront"
-    type: "constant"
-    properties: { amplitude: 1.0, phase: 0.0, energy: 10.0, shape: 512, spacing: 0.0001 }
+    id: my_wavefront
+    model: constant
+    properties:
+      physical:
+        amplitude: 1.0
+        phase: 1.0
+        energy: 10.0
+      grid:
+        size: 512
+        spacing: 0.0001
+      geometry:
+        position:
+          z: 0.0
 
   optic:
     id: "my_aperture"
-    type: "coded_aperture"
-    properties: { material: "Au", density: 19.3, thickness: 0.0001, bit_size: 64 }
+    model: "coded_aperture"
+    properties:
+      physical:
+        formula: "Au"
+        density: 19.3
+        thickness: 0.0001
+      profile:
+        model: "binary_random"
+        bit_size: 64
+        seed: 0
+      geometry:
+        position:
+          z: 1.0
 
   sample:
     id: "my_sample"
-    type: "custom_profile"
+    model: "custom_profile"
+    properties:
+      physical:
+        formula: "C5H8O2"
+        density: 1.18
+        thickness: 0.001
+      profile:
+        model: "custom_profile"
+        file_path: "coho/resources/samples/lena.npy"
+      geometry:
+        position:
+          z: 2.0
+
+  detector:
+    id: "my_detector"
+    model: "integrating"
     properties: 
-      material: "C5H8O2"
-      density: 1.18
-      thickness: 0.001
-      custom_profile: "coho/resources/samples/lena.npy"
+      geometry:
+        position:
+          z: 100.0
 
-  detector: { id: "my_detector", type: "integrating" }
+operator:
+  propagator:
+    id: "my_propagator"
+    model: "fresnel"
 
-optimization:
-  objective: { id: "my_objective", type: "least_squares" }
-  solver:
-    id: "my_solver"
-    type: "gradient_descent"
-    properties: { step_size: 0.01, iterations: 100 }
-
+  interactor:
+    id: "my_interactor"
+    model: "thin_object"
 ```
 
 You can download the example configuration file [here](resources/files/myconfig.yaml).
@@ -72,18 +105,17 @@ Create a file named `myscript.py` with the following code to run the simulation 
 import coho
 import matplotlib.pyplot as plt
 
-# Build and initialize the Simulation instance from configuration
-simulation = coho.build_simulation_from_config("myconfig.yaml")
+# Load configuration from file
+config = coho.load_config("myconfig.yaml")
 
-# Run and get results
-simulation.run()
-results = simulation.get_results()
+# Create and run simulation
+forward = coho.Holography(config)
+image = forward.run()
 
-# Plot results (first and only image)
-plt.figure(figsize=(8, 6))
-plt.imshow(results[0], cmap='gray')
-plt.title("Simulated Wavefront Intensity at Detector")
-plt.colorbar(label="Intensity")
+# Plot detector image
+plt.imshow(image[0], cmap='gray')
+plt.title("Image captured by detector")
+plt.colorbar()
 plt.show()
 ```
 
@@ -93,7 +125,7 @@ You can download the example script [here](resources/files/mymain.py).
 
 Run the simulation using Python by executing the following command in your terminal:
 ```bash
-python myscript.py myconfig.yaml
+python myscript.py
 ```
 
 Voila! You've just run your first Coho simulation.

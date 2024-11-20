@@ -10,34 +10,23 @@ Classes:
     ObjectiveFactory: Creates objective function instances
 """
 
-from ..core.optimization.solvers import (
-    GradientDescent,
-)
-from ..core.optimization.objectives import (
-    LeastSquares,
-    MagnitudeFitting
-)
 from .base_factory import ComponentFactory
+from ..core.optimization.solver import *
+from ..core.optimization.objective import *
+from ..config.models import *
+
+__all__ = ['SolverFactory', 'ObjectiveFactory']
 
 
-# Component type mappings
-SOLVER_TYPES = {
-    'gradient_descent': GradientDescent
-}
-
-OBJECTIVE_TYPES = {
-    'least_squares': LeastSquares,
-    'magnitude_fitting': MagnitudeFitting
-}
-
-
-class SolverFactory(ComponentFactory):
+class SolverFactory(ComponentFactory[SolverProperties, Solver]):
     """Factory for optimization solver creation."""
     def __init__(self):
-        super().__init__(SOLVER_TYPES)
+        super().__init__()
+        self.register('gradient_descent', GradientDescent)
 
 
-class ObjectiveFactory(ComponentFactory):
+class ObjectiveFactory(ComponentFactory[ObjectiveProperties, Objective]):
     """Factory for objective function creation."""
     def __init__(self):
-        super().__init__(OBJECTIVE_TYPES)
+        super().__init__()
+        self.register('least_squares', LeastSquares)

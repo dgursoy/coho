@@ -7,6 +7,12 @@ This package provides modular components for optical simulations
 using factory-based architecture.
 
 Modules:
+    config: Configuration management
+        reader: Configuration file reading
+        schemas: Schema registration and access
+        validator: Configuration validation
+        builder: Object construction from config
+
     factories: Component creation and configuration
         wavefront: Wavefront profiles
         optic: Optical components
@@ -23,41 +29,31 @@ Modules:
         detector: Detector definitions
         propagator: Propagator definitions
         interactor: Interaction definitions
-
-    config: Configuration handling
-        manager: Config loading and validation
-        parser: Simulation construction
 """
 
+# Configuration
+from .config import *
+
 # Factories
-from .factories.simulation_factories import (
-    WavefrontFactory,
-    OpticFactory,
-    SampleFactory,
-    DetectorFactory
-)
-from .factories.operator_factories import (
-    PropagatorFactory,
-    InteractorFactory
-)
-from .factories.experiment_factories import ExperimentFactory
+from .factories.simulation_factories import *
+from .factories.operator_factories import *
+from .factories.optimization_factories import *
 
 # Core
-from .engine.simulation import Simulation
-
-# Config
-from .config.manager import load_simulation_config
-from .config.parser import build_simulation_from_config
+from .core.operator.forward import Holography
 
 __all__ = [
+    # Configuration
+    'read_config',
+    'load_config',
+    # Factories
     'WavefrontFactory',
     'OpticFactory',
     'SampleFactory',
     'DetectorFactory',
     'PropagatorFactory',
     'InteractorFactory',
-    'ExperimentFactory',
-    'Engine',
-    'load_simulation_config',
-    'build_simulation_from_config'
+    'ForwardFactory',
+    # Core
+    'Holography',
 ]

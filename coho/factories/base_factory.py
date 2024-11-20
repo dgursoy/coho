@@ -1,52 +1,25 @@
-"""Base factory for component creation.
-
-This module provides an abstract base factory for creating components.
-
-Classes:
-    ComponentFactory: Creates component instances from type and parameters.
-"""
+"""Base factory for component creation."""
 
 from abc import ABC
-from typing import Dict, Any, Type, Mapping
+from typing import TypeVar, Generic, Type, Dict
 
+P = TypeVar('P')  # Properties type
+T = TypeVar('T')  # Component type
 
-class ComponentFactory(ABC):
-    """Abstract base factory for creating component instances.
+class ComponentFactory(ABC, Generic[P, T]):
+    """Abstract base factory for creating component instances."""
     
-    Attributes:
-        component_types: Mapping of component names to their classes.
-    """
+    def __init__(self):
+        """Initialize the component mapping."""
+        self._components: Dict[str, Type[T]] = {}
     
-    def __init__(self, component_types: Mapping[str, Type]):
-        """Initialize with component type mapping.
-        
-        Args:
-            component_types: Map of component names to classes.
-        """
-        self.component_types = component_types
+    def register(self, name: str, component_class: Type[T]) -> None:
+        """Register a component class."""
+        self._components[name.lower()] = component_class
     
-    def create(self, id: Any, type: str, parameters: Dict[str, Any]) -> Any:
-        """Create a component instance.
-        
-        Args:
-            id: Component identifier.
-            type: Component type name.
-            parameters: Component configuration.
-
-        Returns:
-            New component instance.
-
-        Raises:
-            ValueError: If type is not supported.
-        """
-        component_type = type.lower()
-        
-        if component_type not in self.component_types:
-            valid_types = list(self.component_types.keys())
-            raise ValueError(
-                f"Unsupported type: {type}. "
-                f"Valid types are: {valid_types}"
-            )
-            
-        component_class = self.component_types[component_type]
-        return component_class(id, parameters) 
+    def create(self, model: str, properties: P) -> T:
+        """Create a component instance."""
+        component_class = self._components.get(model.lower())
+        if component_class is None:
+            raise ValueError(f"Unknown model: {model}")
+        return component_class(properties) 

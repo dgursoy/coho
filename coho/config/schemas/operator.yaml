@@ -1,7 +1,10 @@
+# config/schemas/operator.yaml
+
 operator:
   type: dict
   required: true
   schema:
+
     interactor:
       type: dict
       required: true
@@ -9,7 +12,7 @@ operator:
         id:
           type: string
           required: false
-        type:
+        model:
           type: string
           required: true
           allowed: ["thin_object", "thick_object"]
@@ -17,10 +20,6 @@ operator:
           type: dict
           required: true
           default: {}
-          schema:
-            parameters:
-              type: dict
-              required: false
 
     propagator:
       type: dict
@@ -29,7 +28,7 @@ operator:
         id:
           type: string
           required: false
-        type:
+        model:
           type: string
           required: true
           allowed: ["fresnel", "fraunhofer"]
@@ -37,7 +36,3 @@ operator:
           type: dict
           required: true
           default: {}
-          schema:
-            parameters:
-              type: dict
-              required: false

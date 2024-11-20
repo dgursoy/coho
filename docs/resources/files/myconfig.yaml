@@ -1,40 +1,76 @@
-# myconfig.yaml - Example configuration for wavefront simulation
+# Example configuration for a holography simulation
 
 experiment:
-  - { component_id: "my_wavefront", geometry: { position: 0.0 } }
-  - { component_id: "my_aperture", geometry: { position: 1.0 } }
-  - { component_id: "my_sample", geometry: { position: 2.0 } }
-  - { component_id: "my_detector", geometry: { position: 100.0 } }
+  id: "my_experiment"
+  model: "holography"
+  properties:
+    components:
+      - "my_wavefront"
+      - "my_aperture"
+      - "my_sample"
+      - "my_detector"
 
-operator:
-  propagator: { type: "fresnel" }
-  interactor: { type: "thin_object" }
 
 simulation:
   wavefront:
-    id: "my_wavefront"
-    type: "constant"
-    properties: { amplitude: 1.0, phase: 0.0, energy: 10.0, shape: 512, spacing: 0.0001 }
+    id: my_wavefront
+    model: constant
+    properties:
+      physical:
+        amplitude: 1.0
+        phase: 1.0
+        energy: 10.0
+      grid:
+        size: 512
+        spacing: 0.0001
+      geometry:
+        position:
+          z: 0.0
 
   optic:
     id: "my_aperture"
-    type: "coded_aperture"
-    properties: { material: "Au", density: 19.3, thickness: 0.0001, bit_size: 64 }
+    model: "coded_aperture"
+    properties:
+      physical:
+        formula: "Au"
+        density: 19.3
+        thickness: 0.0001
+      profile:
+        model: "binary_random"
+        bit_size: 64
+        seed: 0
+      geometry:
+        position:
+          z: 1.0
 
   sample:
     id: "my_sample"
-    type: "custom_profile"
+    model: "custom_profile"
+    properties:
+      physical:
+        formula: "C5H8O2"
+        density: 1.18
+        thickness: 0.001
+      profile:
+        model: "custom_profile"
+        file_path: "coho/resources/samples/lena.npy"
+      geometry:
+        position:
+          z: 2.0
+
+  detector:
+    id: "my_detector"
+    model: "integrating"
     properties: 
-      material: "C5H8O2"
-      density: 1.18
-      thickness: 0.001
-      custom_profile: "coho/resources/samples/lena.npy"
+      geometry:
+        position:
+          z: 100.0
 
-  detector: { id: "my_detector", type: "integrating" }
+operator:
+  propagator:
+    id: "my_propagator"
+    model: "fresnel"
 
-optimization:
-  objective: { id: "my_objective", type: "least_squares" }
-  solver:
-    id: "my_solver"
-    type: "gradient_descent"
-    properties: { step_size: 0.01, iterations: 100 }
+  interactor:
+    id: "my_interactor"
+    model: "thin_object"

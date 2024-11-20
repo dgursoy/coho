@@ -1,3 +1,5 @@
+# config/schemas/optimization.yaml
+
 optimization:
   type: dict
   required: true
@@ -9,7 +11,7 @@ optimization:
         id:
           type: string
           required: true
-        type:
+        model:
           type: string
           required: true
           allowed:
@@ -19,11 +21,6 @@ optimization:
           type: dict
           required: true
           default: {}
-          schema:
-            parameters:
-              type: dict
-              required: true
-              default: {}
 
     solver:
       type: dict
@@ -32,7 +29,7 @@ optimization:
         id:
           type: string
           required: true
-        type:
+        model:
           type: string
           required: true
           allowed:

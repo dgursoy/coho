@@ -12,69 +12,45 @@ Classes:
     WavefrontFactory: Creates wavefront instances
 """
 
-from ..core.simulation.detector import (
-    PhotonCountingDetector,
-    IntegratingDetector
-)
-from ..core.simulation.optic import (
-    CodedApertureOptic,
-    SlitApertureOptic,
-    CircleApertureOptic,
-    CustomProfileOptic
-)
-from ..core.simulation.sample import (
-    CustomProfileSample
-)
-from ..core.simulation.wavefront import (
-    ConstantWavefront,
-    GaussianWavefront,
-    RectangularWavefront
-)
 from .base_factory import ComponentFactory
+from ..core.simulation.detector import *
+from ..core.simulation.optic import *
+from ..core.simulation.sample import *
+from ..core.simulation.wavefront import *
+from ..config.models import *
+
+__all__ = ['DetectorFactory', 'OpticFactory', 'SampleFactory', 'WavefrontFactory']
 
 
-WAVEFRONT_TYPES = {
-    'constant': ConstantWavefront,
-    'gaussian': GaussianWavefront,
-    'rectangular': RectangularWavefront
-}
-
-DETECTOR_TYPES = {
-    'photon_counting': PhotonCountingDetector,
-    'integrating': IntegratingDetector
-}
-
-SAMPLE_TYPES = {
-    'custom_profile': CustomProfileSample
-}
-
-OPTIC_TYPES = {
-    'coded_aperture': CodedApertureOptic,
-    'slit_aperture': SlitApertureOptic,
-    'circle_aperture': CircleApertureOptic,
-    'custom_profile': CustomProfileOptic
-}
-
-class DetectorFactory(ComponentFactory):
+class DetectorFactory(ComponentFactory[DetectorProperties, Detector]):
     """Factory for detector creation."""
     def __init__(self):
-        super().__init__(DETECTOR_TYPES)
+        super().__init__()
+        self.register('photon_counting', PhotonCountingDetector)
+        self.register('integrating', IntegratingDetector)
 
 
-class OpticFactory(ComponentFactory):
+class OpticFactory(ComponentFactory[OpticProperties, Optic]):
     """Factory for optical component creation."""
     def __init__(self):
-        super().__init__(OPTIC_TYPES)
+        super().__init__()
+        self.register('coded_aperture', CodedApertureOptic)
+        self.register('slit_aperture', SlitApertureOptic)
+        self.register('circle_aperture', CircleApertureOptic)
+        self.register('custom_profile', CustomProfileOptic)
 
 
-class SampleFactory(ComponentFactory):
+class SampleFactory(ComponentFactory[SampleProperties, Sample]):
     """Factory for sample creation."""
     def __init__(self):
-        super().__init__(SAMPLE_TYPES)
+        super().__init__()
+        self.register('custom_profile', CustomProfileSample)
 
 
-class WavefrontFactory(ComponentFactory):
+class WavefrontFactory(ComponentFactory[WavefrontProperties, Wavefront]):
     """Factory for wavefront creation."""
     def __init__(self):
-        super().__init__(WAVEFRONT_TYPES)
-
+        super().__init__()
+        self.register('gaussian', GaussianWavefront)
+        self.register('constant', ConstantWavefront)
+        self.register('rectangular', RectangularWavefront)

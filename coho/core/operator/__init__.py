@@ -15,18 +15,14 @@ Components:
         thick_object: Multi-slice beam propagation
 """
 
-from .propagator import (
-    FresnelPropagator,
-    FraunhoferPropagator
-)
-from .interactor import (
-    ThinObjectInteractor,
-    ThickObjectInteractor
-)
+from .propagator import *
+from .interactor import *
+from .forward import *
 
 __all__ = [
     'FresnelPropagator',
     'FraunhoferPropagator',
     'ThinObjectInteractor',
-    'ThickObjectInteractor'
+    'ThickObjectInteractor',
+    'Holography',
 ]

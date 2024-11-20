@@ -1064,13 +1064,13 @@
 </code></pre></div>
 <p>Each component needs an <code>id</code> as a unique identifier, a <code>model</code> to specify its behavior, and <code>properties</code> that include both component-specific properties (like <code>physical</code> and <code>profile</code>) as well as common properties (like <code>grid</code> and <code>geometry</code>).</p>
 <p>We can access the configuration in Python as follows:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">coho.config</span> <span class="kn">import</span> <span class="n">load_config</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">coho</span> <span class="kn">import</span> <span class="n">load_config</span>
 
-<span class="c1"># Load and validate configuration</span>
-<span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="s2">&quot;simulation_config.yaml&quot;</span><span class="p">)</span>
+<span class="c1"># Build data classes from configuration file</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="s2">&quot;snippets/test_config.yaml&quot;</span><span class="p">)</span>
 
-<span class="c1"># Access typed configuration objects</span>
-<span class="n">simulation</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;simulation&quot;</span><span class="p">]</span>
+<span class="c1"># Access data classes</span>
+<span class="n">simulation</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">simulation</span>
 <span class="n">wavefront</span> <span class="o">=</span> <span class="n">simulation</span><span class="o">.</span><span class="n">wavefront</span>
 
 <span class="c1"># Properties are strongly typed</span>

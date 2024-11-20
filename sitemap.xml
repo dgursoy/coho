@@ -49,27 +49,51 @@
          <lastmod>2024-11-20</lastmod>
     </url>
     <url>
-         <loc>https://dgursoy.github.io/coho/usage/apertures/</loc>
-         <lastmod>2024-11-20</lastmod>
-    </url>
-    <url>
-         <loc>https://dgursoy.github.io/coho/usage/basics/</loc>
-         <lastmod>2024-11-20</lastmod>
-    </url>
-    <url>
          <loc>https://dgursoy.github.io/coho/usage/configuration/</loc>
          <lastmod>2024-11-20</lastmod>
     </url>
     <url>
-         <loc>https://dgursoy.github.io/coho/usage/detector/</loc>
+         <loc>https://dgursoy.github.io/coho/usage/components/</loc>
          <lastmod>2024-11-20</lastmod>
     </url>
     <url>
-         <loc>https://dgursoy.github.io/coho/usage/elements/</loc>
+         <loc>https://dgursoy.github.io/coho/usage/components/aperture/</loc>
          <lastmod>2024-11-20</lastmod>
     </url>
     <url>
-         <loc>https://dgursoy.github.io/coho/usage/simulation/</loc>
+         <loc>https://dgursoy.github.io/coho/usage/components/detector/</loc>
+         <lastmod>2024-11-20</lastmod>
+    </url>
+    <url>
+         <loc>https://dgursoy.github.io/coho/usage/components/sample/</loc>
+         <lastmod>2024-11-20</lastmod>
+    </url>
+    <url>
+         <loc>https://dgursoy.github.io/coho/usage/components/wavefront/</loc>
+         <lastmod>2024-11-20</lastmod>
+    </url>
+    <url>
+         <loc>https://dgursoy.github.io/coho/usage/experiment/</loc>
+         <lastmod>2024-11-20</lastmod>
+    </url>
+    <url>
+         <loc>https://dgursoy.github.io/coho/usage/experiment/states/</loc>
+         <lastmod>2024-11-20</lastmod>
+    </url>
+    <url>
+         <loc>https://dgursoy.github.io/coho/usage/runtime/</loc>
+         <lastmod>2024-11-20</lastmod>
+    </url>
+    <url>
+         <loc>https://dgursoy.github.io/coho/usage/runtime/devices/</loc>
+         <lastmod>2024-11-20</lastmod>
+    </url>
+    <url>
+         <loc>https://dgursoy.github.io/coho/usage/runtime/reconstruction/</loc>
+         <lastmod>2024-11-20</lastmod>
+    </url>
+    <url>
+         <loc>https://dgursoy.github.io/coho/usage/runtime/simulation/</loc>
          <lastmod>2024-11-20</lastmod>
     </url>
 </urlset>

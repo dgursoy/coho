@@ -62,12 +62,21 @@ nav:
   - Quick Start: quickstart.md
   - Usage:
       - Overview: usage/index.md
-      - Basic Concepts: usage/basics.md
-      - Working with Apertures: usage/apertures.md
-      - Optical Elements: usage/elements.md
-      - Detector Setup: usage/detector.md
-      - Simulation Workflow: usage/simulation.md
       - Configuration Guide: usage/configuration.md
+      - Component Definitions:
+          - Overview: usage/components/index.md
+          - Wavefront: usage/components/wavefront.md   
+          - Aperture: usage/components/aperture.md
+          - Sample: usage/components/sample.md
+          - Detector: usage/components/detector.md
+      - Experiment Definitions: 
+          - Overview: usage/experiment/index.md
+          - State Definitions: usage/experiment/states.md
+      - Runtime Operations: 
+          - Overview: usage/runtime/index.md
+          - Simulation: usage/runtime/simulation.md
+          - Reconstruction: usage/runtime/reconstruction.md
+          - Devices: usage/runtime/devices.md
   - Examples:
       - Overview: examples/index.md
   - Contributing: 

@@ -1,17 +1,15 @@
 # Using Coho
 
-This section is to guide you through using Coho.
+The logic of Coho involves describing the components of a holography setup and the experiment states, and then running the simulation to acquire data. The following steps describe the process:
 
 ## Key Topics
 
-* **[Basic Concepts:](basics.md)** Understand coded holography principles and Coho's implementation
-* **[Working with Apertures:](apertures.md)** Create and manipulate coding patterns and apertures
-* **[Sample Modeling:](elements.md)** Learn about built-in sample types and how to create your own
-* **[Detector Setup:](detector.md)** Understand how to configure and use detectors in Coho
-* **[Simulation Pipeline:](simulation.md)** Set up and run holography simulations
-* **[Configuration Guide:](configuration.md)** Customize Coho for your needs
+* **[Configuration Guide:](configuration.md)** Configuration options and management
+* **[Component Definitions:](components/index.md)** Define the components in the simulation
+* **[Experiment Definitions:](experiment/index.md)** Define the experiment states
+* **[Runtime Operations:](runtime/index.md)** Define runtime operations for the simulation (or reconstruction)
 
-Each topic is covered in detail in its respective section. Start with [Basic Concepts](basics.md) if you're new to coded holography or the Coho package.
+Each topic is covered in detail in its respective section. Start with [Quick Start](../quickstart.md) if you're new to coded holography or the Coho package before diving into the details.
 
 Also, check out the [Examples](../examples/index.md) section to see practical applications and analysis workflows.
 

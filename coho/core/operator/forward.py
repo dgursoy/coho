@@ -54,15 +54,8 @@ class Forward(ABC):
     def _init_operators(self, config):
         """Initialize propagation and interaction operators."""
         from coho.factories import PropagatorFactory, InteractorFactory
-        
-        self.propagator = PropagatorFactory().create(
-            model=config.propagator.model,
-            properties=config.propagator.properties
-        )
-        self.interactor = InteractorFactory().create(
-            model=config.interactor.model,
-            properties=config.interactor.properties
-        )
+        self.propagator = PropagatorFactory().create(model='fresnel')
+        self.interactor = InteractorFactory().create(model='thin_object')
 
     def _init_experiment(self, config):
         """Initialize experiment parameters."""

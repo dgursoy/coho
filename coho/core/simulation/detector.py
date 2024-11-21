@@ -20,7 +20,7 @@ Classes:
 """
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Optional
 import numpy as np
 from coho.config.models import DetectorProperties
 from coho.core.simulation.wavefront import Wavefront
@@ -34,10 +34,10 @@ class Detector(ABC):
     """Abstract base detector class.
     """
 
-    def __init__(self, properties: DetectorProperties):
+    def __init__(self, properties: Optional[DetectorProperties] = None):
         """Initialize detector.
         """
-        self.properties = properties
+        self.properties = properties or {}
         self._initialize_detector()
 
     def _initialize_detector(self):

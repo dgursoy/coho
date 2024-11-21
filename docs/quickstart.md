@@ -82,15 +82,6 @@ simulation:
       geometry:
         position:
           z: 100.0
-
-operator:
-  propagator:
-    id: "my_propagator"
-    model: "fresnel"
-
-  interactor:
-    id: "my_interactor"
-    model: "thin_object"
 ```
 
 You can download the example configuration file [here](resources/files/myconfig.yaml).

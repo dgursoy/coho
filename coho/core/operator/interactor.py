@@ -38,7 +38,7 @@ class Interactor(ABC):
 
     def __init__(self, properties: Optional[InteractorProperties]):
         """Initialize interactor."""
-        self.properties = properties
+        self.properties = properties or {}
 
     @abstractmethod
     def interact(self, wavefront: Wavefront, element: Union[Optic, Sample]) -> Wavefront:

@@ -34,7 +34,7 @@ To install Coho from the source code:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/coho.git
+git clone https://github.com/dgursoy/coho.git
 cd coho
 
 # Install Poetry if you haven't already
@@ -48,6 +48,9 @@ brew install poetry
 
 # Install Coho and its dependencies 
 poetry install
+
+# Activate the shell
+poetry shell
 ```
 
 ## Verifying Installation

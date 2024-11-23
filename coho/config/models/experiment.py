@@ -19,8 +19,19 @@ __all__ = [
     'ExperimentConfig'
 ]
 
+class NestedRange(BaseModel):
+    start: float
+    end: float
+    step: float
+
+class ExperimentScans(BaseModel):
+    targets: List[str] = []
+    sweeps: Dict[str, NestedRange] = {}
+    order: List[str] = []
+
 class ExperimentProperties(BaseModel):
     components: List[str] = []
+    scans: ExperimentScans = ExperimentScans()
 
 class Experiment(BaseModel):
     id: str

@@ -18,3 +18,30 @@ experiment:
         components:
           type: list
           required: true
+        scans:
+          type: dict
+          required: false
+          default: {}
+          schema:
+            targets:
+              type: list
+              required: false
+              default: []
+            sweeps:
+              type: dict
+              required: false
+              default: {}
+              keysrules:
+                type: string
+              valuesrules:
+                type: dict
+                schema:
+                  start: {type: number, required: true}
+                  end: {type: number, required: true}
+                  step: {type: number, required: true}
+            order:
+              type: list
+              required: false
+              default: []
+              schema:
+                type: string

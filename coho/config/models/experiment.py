@@ -12,7 +12,7 @@ Classes:
 """
 
 from typing import List, Dict
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 __all__ = [
     'ExperimentProperties', 'Experiment', 
@@ -25,9 +25,9 @@ class NestedRange(BaseModel):
     step: float
 
 class ExperimentScans(BaseModel):
-    targets: List[str] = []
-    sweeps: Dict[str, NestedRange] = {}
-    order: List[str] = []
+    targets: List[str] = Field(default_factory=list)
+    sweeps: Dict[str, NestedRange] = Field(default_factory=dict)
+    order: List[str] = Field(default_factory=list)
 
 class ExperimentProperties(BaseModel):
     components: List[str] = []

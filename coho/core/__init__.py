@@ -56,6 +56,10 @@ __all__ = [
     
     # Experiment
     'Batch',
+    'BatchDetector',
+    'BatchOptic',
+    'BatchSample',
+    'BatchWavefront',
     'prepare',
     'Scanner'
 ]

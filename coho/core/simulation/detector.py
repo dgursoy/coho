@@ -23,12 +23,11 @@ from abc import ABC
 from typing import List, Optional
 import numpy as np
 from coho.config.models import DetectorProperties
-from coho.core.simulation.wavefront import Wavefront, BatchWavefront
+from coho.core.simulation.wavefront import Wavefront
 
 __all__ = [
     'IntegratingDetector',
     'PhotonCountingDetector',
-    'BatchDetector'
 ]
 
 class Detector(ABC):
@@ -67,26 +66,3 @@ class PhotonCountingDetector(Detector):
     def detect(self, wavefront: Wavefront) -> None:
         """Record photon counts (not implemented). """
         raise NotImplementedError("PhotonCountingDetector not implemented")
-    
-
-class BatchDetector(Detector):
-    """Detector for vectorized batch measurements.
-    
-    This class enables vectorized operations on batches of wavefronts,
-    avoiding loops and improving computational efficiency.
-    """
-    
-    def detect(self, batch_wavefront: BatchWavefront) -> np.ndarray:
-        """Record and return vectorized measurements for batch of wavefronts.
-        
-        Args:
-            batch_wavefront: Batch of wavefronts to measure
-            
-        Returns:
-            np.ndarray: Array of measurements (batch_size, height, width)
-                computed using vectorized operations
-        """
-        # Vectorized intensity calculation for all wavefronts at once
-        intensities = np.abs(batch_wavefront.complex_wavefronts) ** 2
-        return intensities
-    

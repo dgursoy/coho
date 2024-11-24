@@ -4,4 +4,12 @@ from .batcher import *
 from .sweeper import *
 from .scanner import *
 
-__all__ = ['Batch', 'prepare', 'Scanner'] 
+__all__ = [
+    'Batch', 
+    'BatchDetector',
+    'BatchOptic',
+    'BatchSample',
+    'BatchWavefront',
+    'prepare', 
+    'Scanner'
+] 

@@ -10,20 +10,17 @@ Classes:
     ConstantWavefront: Uniform amplitude and phase
     GaussianWavefront: Gaussian profile
     RectangularWavefront: Rectangular profile
-    BatchWavefront: Container for multiple wavefronts with varying parameters
 """
 
 from abc import ABC, abstractmethod
 import numpy as np
 from coho.config.models import WavefrontProperties
-from ..experiment.batcher import Batch
 from scipy.ndimage import rotate, shift
 
 __all__ = [
     'ConstantWavefront',
     'GaussianWavefront',
     'RectangularWavefront',
-    'BatchWavefront',
 ]
 
 
@@ -139,19 +136,3 @@ class RectangularWavefront(Wavefront):
         y_start = (self.size - height) // 2
         profile[y_start:y_start + height, x_start:x_start + width] = 1.0
         return profile
-
-
-class BatchWavefront(Batch):
-    """Container for wavefront parameter states."""
-    
-    def __init__(self, component_class, base_properties, parameter_arrays):
-        """Initialize batch wavefront container."""
-        super().__init__(component_class, base_properties, parameter_arrays)
-    
-    @property
-    def complex_wavefront(self):
-        """Generate array of complex wavefronts."""
-        return np.array([
-            self.get_state(idx).complex_wavefront 
-            for idx in range(self.num_states)
-        ])

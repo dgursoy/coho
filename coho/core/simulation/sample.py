@@ -14,11 +14,9 @@ Classes:
 
 import numpy as np
 from .element import Element
-from ..experiment.batcher import Batch
 
 __all__ = [
     'CustomProfileSample',
-    'BatchSample'
 ]
 
 class Sample(Element):
@@ -28,7 +26,7 @@ class Sample(Element):
 class CustomProfileSample(Element):
     """Custom transmission profile sample."""
 
-    def generate_profile(self) -> np.ndarray:
+    def _generate_profile(self) -> np.ndarray:
         """Load custom profile.
         """
         # Get parameters
@@ -40,12 +38,3 @@ class CustomProfileSample(Element):
         # Normalize profile
         profile = profile / np.max(profile)
         return profile
-
-
-class BatchSample(Batch):
-    """Container for multiple samples with varying parameters."""
-    
-    @property
-    def profiles(self):
-        """Get array of all profiles."""
-        return np.array([s.profile for s in self.components])

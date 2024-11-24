@@ -17,14 +17,12 @@ Classes:
 
 import numpy as np
 from .element import Element
-from ..experiment.batcher import Batch
 
 __all__ = [
     'CodedApertureOptic',
     'SlitApertureOptic',
     'CircleApertureOptic',
     'CustomProfileOptic',
-    'BatchOptic'
 ]
 
 class Optic(Element):
@@ -34,20 +32,31 @@ class Optic(Element):
 class CodedApertureOptic(Optic):
     """Binary coded aperture profile."""
 
-    def generate_profile(self) -> np.ndarray:
+    def _generate_profile(self) -> np.ndarray:
         """Generate random binary profile.
         """
         # Get parameters
-        bit_size = self.properties.profile.bit_size
+        bit_size = int(self.properties.profile.bit_size)
         seed = self.properties.profile.seed
 
-        # Generate profile
+        # Generate profile with fixed size
         if seed is not None:
             np.random.seed(seed)
+        
+        # Create empty profile of desired size
+        profile = np.zeros((self.size, self.size))
+        
+        # Calculate number of complete bits that will fit
         num_bits = self.size // bit_size
+        
+        # Generate random bits and scale up
         bits = np.random.choice([0, 1], size=(num_bits, num_bits))
-        profile = np.kron(bits, np.ones((bit_size, bit_size)))
-        profile = profile[:self.size, :self.size]
+        scaled_bits = np.kron(bits, np.ones((bit_size, bit_size)))
+        
+        # Center the pattern in the profile
+        start = (self.size - scaled_bits.shape[0]) // 2
+        end = start + scaled_bits.shape[0]
+        profile[start:end, start:end] = scaled_bits
 
         return profile
 
@@ -55,7 +64,7 @@ class CodedApertureOptic(Optic):
 class SlitApertureOptic(Optic):
     """Rectangular slit aperture."""
 
-    def generate_profile(self) -> np.ndarray:
+    def _generate_profile(self) -> np.ndarray:
         """Generate rectangular slit.
         """
         # Get parameters
@@ -74,7 +83,7 @@ class SlitApertureOptic(Optic):
 class CircleApertureOptic(Optic):
     """Circular aperture."""
 
-    def generate_profile(self) -> np.ndarray:
+    def _generate_profile(self) -> np.ndarray:
         """Generate circular aperture.
         """
         # Get parameters
@@ -93,7 +102,7 @@ class CircleApertureOptic(Optic):
 class CustomProfileOptic(Optic):
     """Custom transmission profile."""
 
-    def generate_profile(self) -> np.ndarray:
+    def _generate_profile(self) -> np.ndarray:
         """Load custom profile.
         """
         # Get parameters
@@ -106,13 +115,4 @@ class CustomProfileOptic(Optic):
         profile = profile / np.max(profile)
         
         return profile
-
-
-
-class BatchOptic(Batch):
-    """Container for multiple optics with varying parameters."""
     
-    @property
-    def profiles(self):
-        """Get array of all profiles."""
-        return np.array([o.profile for o in self.components])

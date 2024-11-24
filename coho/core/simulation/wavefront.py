@@ -10,16 +10,20 @@ Classes:
     ConstantWavefront: Uniform amplitude and phase
     GaussianWavefront: Gaussian profile
     RectangularWavefront: Rectangular profile
+    BatchWavefront: Container for multiple wavefronts with varying parameters
 """
 
 from abc import ABC, abstractmethod
 import numpy as np
 from coho.config.models import WavefrontProperties
+from ..experiment.batcher import Batch
+from scipy.ndimage import rotate, shift
 
 __all__ = [
     'ConstantWavefront',
     'GaussianWavefront',
-    'RectangularWavefront'
+    'RectangularWavefront',
+    'BatchWavefront',
 ]
 
 class Wavefront(ABC):
@@ -34,9 +38,11 @@ class Wavefront(ABC):
 
     def _initialize_wavefront(self):
         """Initialize both amplitude and phase patterns."""
-        base_profile = self.generate_profile()
-        amplitude_profile = base_profile * self.properties.physical.amplitude
-        phase_profile = base_profile * self.properties.physical.phase
+        self.profile = self.generate_profile()
+        self.profile = self._apply_rotation()
+        self.profile = self._apply_translation()
+        amplitude_profile = self.profile * self.properties.physical.amplitude
+        phase_profile = self.profile * self.properties.physical.phase
         self.complex_wavefront = amplitude_profile * np.exp(1j * phase_profile)
 
     @property
@@ -63,6 +69,16 @@ class Wavefront(ABC):
     def generate_profile(self) -> np.ndarray:
         """Generate the base pattern for the wavefront."""
         pass
+        
+    def _apply_rotation(self) -> np.ndarray:
+        """Apply rotation to the profile."""
+        rotation = self.properties.geometry.rotation
+        return rotate(self.profile, rotation, reshape=False, order=1)
+    
+    def _apply_translation(self) -> np.ndarray:
+        """Apply translation to the profile."""
+        translation = self.properties.geometry.position
+        return shift(self.profile, [translation.x, translation.y], order=1)
 
 
 class ConstantWavefront(Wavefront):
@@ -109,3 +125,18 @@ class RectangularWavefront(Wavefront):
         y_start = (self.size - height) // 2
         pattern[y_start:y_start + height, x_start:x_start + width] = 1.0
         return pattern
+
+
+class BatchWavefront(Batch):
+    """Container for multiple wavefronts with varying parameters."""
+    
+    def __init__(self, component_class, base_properties, parameter_arrays):
+        """Initialize batch wavefront container.
+        
+        Args:
+            component_class: Wavefront class to instantiate
+            base_properties: Base properties for all wavefronts
+            parameter_arrays: Dict of parameter paths and their value arrays
+        """
+        super().__init__(component_class, base_properties, parameter_arrays)
+        self.complex_wavefronts = np.array([state.complex_wavefront for state in self.states]) 

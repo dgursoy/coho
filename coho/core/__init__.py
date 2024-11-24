@@ -28,6 +28,7 @@ Modules:
 from .simulation import *
 from .operator import *
 from .optimization import *
+from .experiment import *
 
 __all__ = [
     # Simulation
@@ -52,4 +53,9 @@ __all__ = [
     # Optimization
     'GradientDescent',
     'LeastSquares',
+    
+    # Experiment
+    'Batch',
+    'prepare',
+    'Scanner'
 ]

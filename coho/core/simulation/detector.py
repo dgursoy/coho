@@ -19,41 +19,38 @@ Classes:
             record_intensity: Not implemented
 """
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import List, Optional
 import numpy as np
 from coho.config.models import DetectorProperties
-from coho.core.simulation.wavefront import Wavefront
+from coho.core.simulation.wavefront import Wavefront, BatchWavefront
 
 __all__ = [
     'IntegratingDetector',
-    'PhotonCountingDetector'
+    'PhotonCountingDetector',
+    'BatchDetector'
 ]
 
 class Detector(ABC):
-    """Abstract base detector class.
-    """
-
+    """Base detector class."""
+    
     def __init__(self, properties: Optional[DetectorProperties] = None):
-        """Initialize detector.
-        """
         self.properties = properties or {}
         self._initialize_detector()
 
     def _initialize_detector(self):
-        """Initialize detector images.
-        """
+        """Initialize detector images."""
         self.images: List[np.ndarray] = []
 
-    @abstractmethod
-    def detect(self, wavefront: Wavefront) -> None:
-        """Record wavefront measurement."""
-        pass
+    def detect(self, wavefront: Wavefront) -> np.ndarray:
+        """Record and return wavefront measurement."""
+        intensity = abs(wavefront.complex_wavefront) ** 2
+        self.images.append(intensity)
+        return intensity
 
-    def acquire(self) -> List[np.ndarray]:
-        """Get recorded measurements.""
-        """""
-        return self.images
+    def acquire(self) -> np.ndarray:
+        """Get all recorded measurements."""
+        return np.array(self.images)
 
 
 class IntegratingDetector(Detector):
@@ -70,3 +67,26 @@ class PhotonCountingDetector(Detector):
     def detect(self, wavefront: Wavefront) -> None:
         """Record photon counts (not implemented). """
         raise NotImplementedError("PhotonCountingDetector not implemented")
+    
+
+class BatchDetector(Detector):
+    """Detector for vectorized batch measurements.
+    
+    This class enables vectorized operations on batches of wavefronts,
+    avoiding loops and improving computational efficiency.
+    """
+    
+    def detect(self, batch_wavefront: BatchWavefront) -> np.ndarray:
+        """Record and return vectorized measurements for batch of wavefronts.
+        
+        Args:
+            batch_wavefront: Batch of wavefronts to measure
+            
+        Returns:
+            np.ndarray: Array of measurements (batch_size, height, width)
+                computed using vectorized operations
+        """
+        # Vectorized intensity calculation for all wavefronts at once
+        intensities = np.abs(batch_wavefront.complex_wavefronts) ** 2
+        return intensities
+    

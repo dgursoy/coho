@@ -56,4 +56,7 @@ __all__ = [
     'ForwardFactory',
     # Core
     'Holography',
+    'Batch',
+    'prepare',
+    'Scanner',
 ]

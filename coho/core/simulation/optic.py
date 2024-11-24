@@ -12,16 +12,19 @@ Classes:
     SlitApertureOptic: Rectangular slit aperture
     CircleApertureOptic: Circular aperture
     CustomProfileOptic: Optic with arbitrary transmission profile
+    BatchOptic: Container for multiple optics with varying parameters
 """
 
 import numpy as np
 from .element import Element
+from ..experiment.batcher import Batch
 
 __all__ = [
     'CodedApertureOptic',
     'SlitApertureOptic',
     'CircleApertureOptic',
-    'CustomProfileOptic'
+    'CustomProfileOptic',
+    'BatchOptic'
 ]
 
 class Optic(Element):
@@ -103,3 +106,13 @@ class CustomProfileOptic(Optic):
         profile = profile / np.max(profile)
         
         return profile
+
+
+
+class BatchOptic(Batch):
+    """Container for multiple optics with varying parameters."""
+    
+    @property
+    def profiles(self):
+        """Get array of all profiles."""
+        return np.array([o.profile for o in self.components])

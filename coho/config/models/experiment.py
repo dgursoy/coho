@@ -11,7 +11,7 @@ Classes:
     ExperimentConfig: Complete experiment configuration
 """
 
-from typing import List, Dict
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 __all__ = [
@@ -19,24 +19,26 @@ __all__ = [
     'ExperimentConfig'
 ]
 
-class NestedRange(BaseModel):
-    start: float
-    end: float
-    step: float
+class SweepParameter(BaseModel):
+    path: str
+    range: List[float]
 
-class ExperimentScans(BaseModel):
-    targets: List[str] = Field(default_factory=list)
-    sweeps: Dict[str, NestedRange] = Field(default_factory=dict)
-    order: List[str] = Field(default_factory=list)
+class ComponentSweep(BaseModel):
+    component: str
+    parameters: List[SweepParameter]
+
+class ScanConfig(BaseModel):
+    sweeps: List[ComponentSweep] = Field(default_factory=list)
+    order: List[int] = Field(default_factory=list)
 
 class ExperimentProperties(BaseModel):
-    components: List[str] = []
-    scans: ExperimentScans = ExperimentScans()
+    components: List[str] = Field(default_factory=list)
+    scan: Optional[ScanConfig] = None
 
 class Experiment(BaseModel):
     id: str
     model: str
-    properties: ExperimentProperties = ExperimentProperties()
+    properties: ExperimentProperties = Field(default_factory=ExperimentProperties)
 
 class ExperimentConfig(BaseModel):
     id: str

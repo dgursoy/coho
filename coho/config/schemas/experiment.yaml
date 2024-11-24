@@ -18,30 +18,38 @@ experiment:
         components:
           type: list
           required: true
-        scans:
+        scan:
           type: dict
           required: false
           default: {}
           schema:
-            targets:
+            sweeps:
               type: list
               required: false
               default: []
-            sweeps:
-              type: dict
-              required: false
-              default: {}
-              keysrules:
-                type: string
-              valuesrules:
+              schema:
                 type: dict
                 schema:
-                  start: {type: number, required: true}
-                  end: {type: number, required: true}
-                  step: {type: number, required: true}
+                  component:
+                    type: string
+                    required: true
+                  parameters:
+                    type: list
+                    required: true
+                    schema:
+                      type: dict
+                      schema:
+                        path:
+                          type: string
+                          required: true
+                        range:
+                          type: list
+                          required: true
+                          schema:
+                            type: number
             order:
               type: list
               required: false
               default: []
               schema:
-                type: string
+                type: integer

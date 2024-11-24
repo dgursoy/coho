@@ -13,17 +13,19 @@ import numpy as np
 __all__ = ['Batch']
 
 class Batch:
-    """Container for managing multiple states of a component."""
+    """Container for managing parameter states of a component."""
     
     def __init__(self, component_class: Type, base_properties: Any, 
                  parameter_arrays: Dict[str, np.ndarray]):
-        """Initialize batch of component states."""
+        """Initialize batch parameters."""
         self.base_properties = base_properties
         self.component_class = component_class
         self.parameter_arrays = parameter_arrays
         self.num_states = len(next(iter(parameter_arrays.values())))
         self._validate_arrays()
-        self.states = self._create_states()
+        
+        # Create single reusable component instance
+        self._instance = self.component_class(base_properties)
     
     def _validate_arrays(self):
         """Ensure all parameter arrays have the same length."""
@@ -31,24 +33,24 @@ class Batch:
         if not all(length == self.num_states for length in lengths):
             raise ValueError("All parameter arrays must have the same length")
     
-    def _create_states(self):
-        """Create all component instances."""
-        return [self.component_class(self._configure(idx)) 
-                for idx in range(self.num_states)]
-    
-    def _configure(self, idx):
-        """Configure properties for a specific state."""
-        properties = copy.deepcopy(self.base_properties)
+    def get_state(self, idx):
+        """Get component state for specific index."""
+        # Update instance properties for this state
         for path, values in self.parameter_arrays.items():
-            target = properties
+            target = self._instance.properties
             *parts, attr = path.split('.')
             for part in parts:
                 target = getattr(target, part)
             setattr(target, attr, values[idx])
-        return properties
+            
+        # Clear component's cached computations
+        if hasattr(self._instance, 'clear_cache'):
+            self._instance.clear_cache()
+        
+        return self._instance
 
     def __getitem__(self, idx):
-        return self.states[idx]
+        return self.get_state(idx)
 
     def __len__(self):
         return self.num_states 

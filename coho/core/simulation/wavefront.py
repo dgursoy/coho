@@ -26,24 +26,33 @@ __all__ = [
     'BatchWavefront',
 ]
 
+
 class Wavefront(ABC):
     """Base class for optical wavefronts."""
     
     def __init__(self, properties: WavefrontProperties):
-        """
-        Initialize the wavefront with specified properties.
-        """
+        """Initialize the wavefront with specified properties."""
         self.properties = properties
-        self._initialize_wavefront()
+        self._profile = None
+        self._complex_wavefront = None
 
-    def _initialize_wavefront(self):
-        """Initialize both amplitude and phase patterns."""
-        self.profile = self.generate_profile()
-        self.profile = self._apply_rotation()
-        self.profile = self._apply_translation()
-        amplitude_profile = self.profile * self.properties.physical.amplitude
-        phase_profile = self.profile * self.properties.physical.phase
-        self.complex_wavefront = amplitude_profile * np.exp(1j * phase_profile)
+    @property
+    def profile(self):
+        """Lazily generate and return the profile."""
+        if self._profile is None:
+            self._profile = self._generate_profile()
+            self._profile = self._apply_rotation()
+            self._profile = self._apply_translation()
+        return self._profile
+
+    @property
+    def complex_wavefront(self):
+        """Lazily compute and return the complex wavefront."""
+        if self._complex_wavefront is None:
+            amplitude_profile = self.profile * self.properties.physical.amplitude
+            phase_profile = self.profile * self.properties.physical.phase
+            self._complex_wavefront = amplitude_profile * np.exp(1j * phase_profile)
+        return self._complex_wavefront
 
     @property
     def wavelength(self) -> float:
@@ -66,7 +75,7 @@ class Wavefront(ABC):
         return self.properties.grid.spacing
 
     @abstractmethod
-    def generate_profile(self) -> np.ndarray:
+    def _generate_profile(self) -> np.ndarray:
         """Generate the base pattern for the wavefront."""
         pass
         
@@ -80,11 +89,16 @@ class Wavefront(ABC):
         translation = self.properties.geometry.position
         return shift(self.profile, [translation.x, translation.y], order=1)
 
+    def clear_cache(self):
+        """Clear cached computations."""
+        self._profile = None
+        self._complex_wavefront = None
+
 
 class ConstantWavefront(Wavefront):
     """Wavefront with uniform amplitude and phase."""
 
-    def generate_profile(self) -> np.ndarray:
+    def _generate_profile(self) -> np.ndarray:
         """Generate a uniform profile."""
         return np.ones((self.size, self.size))
 
@@ -92,7 +106,7 @@ class ConstantWavefront(Wavefront):
 class GaussianWavefront(Wavefront):
     """Wavefront with a Gaussian amplitude profile."""
 
-    def generate_profile(self) -> np.ndarray:
+    def _generate_profile(self) -> np.ndarray:
         """
         Generate a Gaussian profile.
 
@@ -110,7 +124,7 @@ class GaussianWavefront(Wavefront):
 class RectangularWavefront(Wavefront):
     """Wavefront with a rectangular amplitude profile."""
 
-    def generate_profile(self) -> np.ndarray:
+    def _generate_profile(self) -> np.ndarray:
         """
         Generate a rectangular profile.
 
@@ -120,23 +134,24 @@ class RectangularWavefront(Wavefront):
         width = self.properties.profile.width
         height = self.properties.profile.height
 
-        pattern = np.zeros((self.size, self.size))
+        profile = np.zeros((self.size, self.size))
         x_start = (self.size - width) // 2
         y_start = (self.size - height) // 2
-        pattern[y_start:y_start + height, x_start:x_start + width] = 1.0
-        return pattern
+        profile[y_start:y_start + height, x_start:x_start + width] = 1.0
+        return profile
 
 
 class BatchWavefront(Batch):
-    """Container for multiple wavefronts with varying parameters."""
+    """Container for wavefront parameter states."""
     
     def __init__(self, component_class, base_properties, parameter_arrays):
-        """Initialize batch wavefront container.
-        
-        Args:
-            component_class: Wavefront class to instantiate
-            base_properties: Base properties for all wavefronts
-            parameter_arrays: Dict of parameter paths and their value arrays
-        """
+        """Initialize batch wavefront container."""
         super().__init__(component_class, base_properties, parameter_arrays)
-        self.complex_wavefronts = np.array([state.complex_wavefront for state in self.states]) 
+    
+    @property
+    def complex_wavefront(self):
+        """Generate array of complex wavefronts."""
+        return np.array([
+            self.get_state(idx).complex_wavefront 
+            for idx in range(self.num_states)
+        ])

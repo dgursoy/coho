@@ -17,9 +17,14 @@ class ComponentFactory(ABC, Generic[P, T]):
         """Register a component class."""
         self._components[name.lower()] = component_class
     
-    def create(self, model: str, properties: Optional[P] = None) -> T:
-        """Create a component instance."""
+    def get_class(self, model: str) -> Type[T]:
+        """Get the component class for a given model name."""
         component_class = self._components.get(model.lower())
         if component_class is None:
             raise ValueError(f"Unknown model: {model}")
+        return component_class
+    
+    def create(self, model: str, properties: Optional[P] = None) -> T:
+        """Create a component instance."""
+        component_class = self.get_class(model)
         return component_class(properties or {}) 

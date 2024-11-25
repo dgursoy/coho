@@ -6,10 +6,10 @@ from .scanner import *
 
 __all__ = [
     'Batch', 
-    'BatchDetector',
-    'BatchOptic',
-    'BatchSample',
-    'BatchWavefront',
+    'WavefrontBatch',
+    'OpticBatch',
+    'SampleBatch',
+    'DetectorBatch',
     'prepare', 
     'Scanner'
 ] 

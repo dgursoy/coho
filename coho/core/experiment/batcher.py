@@ -11,10 +11,10 @@ import numpy as np
 
 __all__ = [
     'Batch',
-    'BatchWavefront',
-    'BatchOptic',
-    'BatchSample',
-    'BatchDetector'
+    'WavefrontBatch',
+    'OpticBatch',
+    'SampleBatch',
+    'DetectorBatch'
 ]
 
 class Batch:
@@ -72,7 +72,7 @@ class Batch:
     def __len__(self):
         return self.num_states 
 
-class BatchWavefront(Batch):
+class WavefrontBatch(Batch):
     """Container for wavefront parameter states."""
     
     @property
@@ -83,20 +83,18 @@ class BatchWavefront(Batch):
             for idx in range(self.num_states)
         ])
 
-class BatchOptic(Batch):
+class OpticBatch(Batch):
     """Container for optics with varying parameters."""
     
     @property
     def profile(self):
         """Get array of all profiles."""
-        for idx in range(self.num_states):
-            print (idx, self.get_state(idx))
         return np.array([
             self.get_state(idx).profile 
             for idx in range(self.num_states)
         ])
 
-class BatchSample(Batch):
+class SampleBatch(Batch):
     """Container for samples with varying parameters."""
     
     @property
@@ -107,10 +105,10 @@ class BatchSample(Batch):
             for idx in range(self.num_states)
         ])
 
-class BatchDetector(Batch):
+class DetectorBatch(Batch):
     """Detector for vectorized batch measurements."""
     
-    def detect(self, batch_wavefront: BatchWavefront) -> np.ndarray:
+    def detect(self, batch_wavefront: WavefrontBatch) -> np.ndarray:
         """Record and return vectorized measurements for batch of wavefronts."""
         intensities = np.abs(batch_wavefront.complex_wavefront) ** 2
         return intensities

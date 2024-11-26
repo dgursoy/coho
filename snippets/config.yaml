@@ -1,0 +1,76 @@
+experiment:
+  scan:
+    sweeps:
+      Aperture.geometry.position.x: [-10, 10, 1]
+      Aperture.geometry.position.y: [-10, 10, 1]
+    order: [1, 2]
+
+components:
+  Wavefront:
+    model: GaussianWavefront
+    physical:
+      amplitude: 1.0
+      phase: 1.0
+      energy: 10.0
+    profile:
+      sigma: 256
+    grid:
+      size: 512
+      spacing: 0.0001
+    geometry:
+      distance: 0.0
+      rotation: 0.0
+      position:
+        x: 0.0
+        y: 0.0
+  
+  Aperture:
+    model: CodedAperture
+    physical:
+      formula: Au
+      density: 19.3
+      thickness: 0.0001
+    profile:
+      bit_size: 64
+      seed: 0
+    grid:
+      size: 512
+      spacing: 0.0001
+    geometry:
+      distance: 1.0
+      rotation: 20.0
+      position:
+        x: 0.0
+        y: 0.0
+
+  Sample:
+    model: LenaProfile
+    physical:
+      formula: C5H8O2
+      density: 1.18
+      thickness: 0.001
+    grid:
+      size: 512
+      spacing: 0.0001
+    geometry:
+      distance: 2.0
+      rotation: 0.0
+      position:
+        x: 0.0
+        y: 0.0
+
+  Detector:
+    model: IntegratingDetector
+    physical:
+      formula: Si
+      density: 2.33
+      thickness: 0.001
+    grid:
+      size: 512
+      spacing: 0.0001
+    geometry:
+      distance: 100.0
+      rotation: 0.0
+      position:
+        x: 0.0
+        y: 0.0

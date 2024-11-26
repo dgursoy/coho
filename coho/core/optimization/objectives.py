@@ -1,23 +1,10 @@
-# core/optimization/objective.py
-
-"""Objective functions for optimization problems.
-
-This module provides implementations of various objective functions
-used in optimization algorithms.
-
-Classes:
-    Objective: Abstract base class for objective functions
-    LeastSquares: L2 norm fitting objective
-    MagnitudeFitting: Amplitude-only matching objective
-
-Methods:
-    evaluate: Compute objective value
-"""
+"""Objective functions for optimization."""
 
 import numpy as np
 from abc import ABC, abstractmethod
 from coho.config.models import ObjectiveProperties
 from typing import Callable
+
 
 __all__ = [
     'LeastSquares',

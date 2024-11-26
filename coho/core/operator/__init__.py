@@ -1,28 +1,54 @@
-# core/operator/__init__.py
+"""Operators for wave propagation and interaction."""
 
-"""Core operator components for wave propagation.
+from abc import ABC, abstractmethod
+from typing import Any, Optional, Dict
 
-This module provides base classes for forward and adjoint operators
-used in both simulation and optimization.
+class Operator(ABC):
+    """Base operator class."""
+    
+    @abstractmethod
+    def apply(self, *args, **kwargs) -> Any:
+        """Forward operation."""
+        pass
+    
+    @abstractmethod
+    def adjoint(self, *args, **kwargs) -> Any:
+        """Adjoint operation."""
+        pass
 
-Components:
-    Propagator: Field propagation methods
-        fresnel: Near-field diffraction
-        fraunhofer: Far-field diffraction
+class Pipeline(Operator):
+    """Pipeline of operators."""
+    
+    def __init__(self, operators: list[tuple[Operator, dict]]):
+        """Initialize pipeline with operators and their arguments.
+        
+        Args:
+            operators: List of tuples containing (operator, kwargs)
+        """
+        self.operators = operators
+    
+    def apply(self, input_data: Any) -> Any:
+        """Apply operators in sequence with their respective arguments."""
+        result = input_data
+        for op, kwargs in self.operators:
+            result = op.apply(result, **kwargs)
+        return result
+    
+    def adjoint(self, input_data: Any) -> Any:
+        """Apply adjoint operators in reverse sequence."""
+        result = input_data
+        for op, kwargs in reversed(self.operators):
+            result = op.adjoint(result, **kwargs)
+        return result
 
-    Interactor: Wave-object interactions
-        thin_object: Simple transmission functions
-        thick_object: Multi-slice beam propagation
-"""
-
-from .propagator import *
-from .interactor import *
-from .forward import *
+# Local imports
+from .propagation import *
+from .interaction import *
 
 __all__ = [
-    'FresnelPropagator',
-    'FraunhoferPropagator',
-    'ThinObjectInteractor',
-    'ThickObjectInteractor',
-    'Holography',
+    'Interact',
+    'Detect',
+    'Rotate',
+    'Translate'
+    'FresnelPropagate',
 ]

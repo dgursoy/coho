@@ -1,16 +1,10 @@
-# core/optimization/solver.py
-
-"""Base classes for iterative solvers.
-
-Classes:
-    IterativeSolver: Abstract base class for iterative solvers.
-    ConvergenceCriterion: Abstract base class for convergence checks.
-"""
+"""Solver classes for optimization."""
 
 from abc import ABC, abstractmethod
 import numpy as np
-from coho.core.optimization.objective import Objective
+from coho.core.optimization.objectives import Objective
 from coho.config.models import SolverProperties
+
 
 __all__ = [
     'GradientDescent'

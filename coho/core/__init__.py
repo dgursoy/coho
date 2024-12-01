@@ -30,4 +30,6 @@ __all__ = [
     'Detect',
     'Rotate',
     'Translate',
+    # Experiment
+    'HolographyScan',
 ]

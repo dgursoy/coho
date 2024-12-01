@@ -2,6 +2,7 @@
 
 import numpy as np
 from typing import Any
+from abc import ABC, abstractmethod
 
 # Local imports
 from . import Component
@@ -19,51 +20,54 @@ class Wavefront(Component):
         """Initialize the wavefront with specified properties."""
         super().__init__(properties)
 
-        # Cache
-        self._phasor = None
+    @property
+    def complexform(self) -> np.ndarray:
+        """Complex form with batch dimension."""
+        if self._complexform is None:
+            self._complexform = np.expand_dims(self.generate_form(), axis=0)
+        return self._complexform
+    
+    @complexform.setter
+    def complexform(self, value: np.ndarray):
+        """Set the complex form."""
+        self._complexform = value
 
     @property
-    def wavelength(self) -> float:
+    def wavelength(self) -> np.ndarray:
         """Wavelength derived from energy in keV."""
-        return 1.23984193e-7 / self.physical.energy
-
+        return np.divide(1.23984193e-7, self.physical.energy)
+    
     @property
-    def wavenumber(self) -> float:
+    def wavenumber(self) -> np.ndarray:
         """Wavenumber (2π divided by wavelength)."""
-        return 2 * np.pi / self.wavelength
+        return np.divide(2 * np.pi, self.wavelength)
 
-    @property
-    def phasor(self):
-        """Lazily compute and return the complex wavefront."""
-        if self._phasor is None:
-            amplitude = self.image * self.physical.amplitude
-            phase = self.image * self.physical.phase
-            self._phasor = amplitude * np.exp(1j * phase)
-        return self._phasor
-
-    @phasor.setter
-    def phasor(self, value):
-        """Set complex wavefront and clear image cache."""
-        self._phasor = value
+    @abstractmethod
+    def generate_form(self) -> np.ndarray:
+        """Generate a wavefront form."""
+        pass
 
 class CustomWavefront(Wavefront):
-    def _generate_image(self) -> np.ndarray:
-        """Generate a custom wavefront profile."""
-        file_path = self.profile.file_path
-        image = np.load(file_path)
-        return image / np.max(image)
+    def generate_form(self) -> np.ndarray:
+        """Generate a custom wavefront form."""
+        path = self.profile.path
+        form = np.load(path)
+        return form / np.max(form)
     
 class GaussianWavefront(Wavefront):
-    def _generate_image(self) -> np.ndarray:
-        """Generate a Gaussian wavefront profile."""
+    def generate_form(self) -> np.ndarray:
+        """Generate a Gaussian wavefront form."""
+        size = self.profile.size
         sigma = self.profile.sigma
-        x = np.linspace(-self.size / 2, self.size / 2, self.size)
-        y = np.linspace(-self.size / 2, self.size / 2, self.size)
-        xx, yy = np.meshgrid(x, y)
-        image = np.exp(-((xx**2 + yy**2) / (2 * sigma**2)))
-        return image
+        x = np.linspace(-size / 2, size / 2, size)
+        y = np.linspace(-size / 2, size / 2, size)
+        xx, yy = np.meshgrid(x, y, indexing='ij')
+        return np.exp(-((xx**2 + yy**2) / (2 * sigma**2)))
     
 class UniformWavefront(Wavefront):
-    def _generate_image(self) -> np.ndarray:
-        """Generate a uniform wavefront profile."""
-        return np.ones((self.size, self.size))
+    def generate_form(self) -> np.ndarray:
+        """Generate a uniform wavefront form."""
+        size = self.profile.size
+        return np.ones((size, size))
+    
+

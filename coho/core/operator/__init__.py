@@ -1,18 +1,23 @@
 """Operators for wave propagation and interaction."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Dict
+from typing import Any, TypeVar, Callable
+from functools import wraps
+import numpy as np
+
+T = TypeVar('T')  # Input type
+U = TypeVar('U')  # Output type
 
 class Operator(ABC):
     """Base operator class."""
     
     @abstractmethod
-    def apply(self, *args, **kwargs) -> Any:
+    def apply(self, input: T, **kwargs) -> U:
         """Forward operation."""
         pass
     
     @abstractmethod
-    def adjoint(self, *args, **kwargs) -> Any:
+    def adjoint(self, input: U, **kwargs) -> T:
         """Adjoint operation."""
         pass
 
@@ -27,16 +32,16 @@ class Pipeline(Operator):
         """
         self.operators = operators
     
-    def apply(self, input_data: Any) -> Any:
+    def apply(self, input: Any) -> Any:
         """Apply operators in sequence with their respective arguments."""
-        result = input_data
+        result = input
         for op, kwargs in self.operators:
             result = op.apply(result, **kwargs)
         return result
     
-    def adjoint(self, input_data: Any) -> Any:
+    def adjoint(self, input: Any) -> Any:
         """Apply adjoint operators in reverse sequence."""
-        result = input_data
+        result = input
         for op, kwargs in reversed(self.operators):
             result = op.adjoint(result, **kwargs)
         return result
@@ -44,6 +49,7 @@ class Pipeline(Operator):
 # Local imports
 from .propagation import *
 from .interaction import *
+from .scanning import *
 
 __all__ = [
     'Interact',
@@ -51,4 +57,6 @@ __all__ = [
     'Rotate',
     'Translate'
     'FresnelPropagate',
+    'Scan',
+    'ScanManager'
 ]

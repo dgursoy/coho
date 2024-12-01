@@ -15,61 +15,73 @@ __all__ = [
 
 class Optic(Component):
     """Base optic class."""
-    pass
+
+    def __init__(self, properties):
+        """Initialize the optic with specified properties."""
+        super().__init__(properties)
+
+        # Generate the complex form
+        self.form = np.expand_dims(self.generate_form(), axis=0)
 
 class CircularOptic(Optic):
-    def _generate_image(self) -> np.ndarray:
+    def generate_form(self) -> np.ndarray:
         """Generate a circular optic image."""
         radius = self.profile.radius
-        y, x = np.ogrid[:self.size, :self.size]
-        center = self.size // 2
+        size = self.size
+        y, x = np.ogrid[-size//2:size//2, -size//2:size//2]
+        center = 0
         mask = (x - center)**2 + (y - center)**2 <= radius**2
-        image = np.zeros((self.size, self.size))
-        image[mask] = 1
-        return image
+        form = np.zeros((size, size))
+        form[mask] = 1
+        return form
 
 class CodedOptic(Optic):
-    def _generate_image(self) -> np.ndarray:
+    def generate_form(self) -> np.ndarray:
         """Generate a coded optic image."""
         bit_size = int(self.profile.bit_size)
+        size = self.profile.size
         seed = self.profile.seed
         
+        # Set random seed if provided
         if seed is not None:
             np.random.seed(seed)
-        
-        image = np.zeros((self.size, self.size))
-        num_bits = self.size // bit_size
+            
+        # Generate the bit pattern
+        num_bits = size // bit_size
         bits = np.random.choice([0, 1], size=(num_bits, num_bits))
-        scaled_bits = np.kron(bits, np.ones((bit_size, bit_size)))
+        pattern = np.kron(bits, np.ones((bit_size, bit_size)))
         
-        start = (self.size - scaled_bits.shape[0]) // 2
-        end = start + scaled_bits.shape[0]
-        image[start:end, start:end] = scaled_bits
-        return image
+        # Center the pattern
+        form = np.zeros((size, size))
+        start = (size - pattern.shape[0]) // 2
+        end = start + pattern.shape[0]
+        form[start:end, start:end] = pattern
+        return form
 
 class CustomOptic(Optic):
-    def _generate_image(self) -> np.ndarray:
-        """Generate a custom optic image."""
-        file_path = self.profile.file_path
-        image = np.load(file_path)
-        return image / np.max(image)
+    def generate_form(self) -> np.ndarray:
+        """Generate a custom optic form."""
+        path = self.profile.path
+        form = np.load(path)
+        return form / np.max(form)
     
 class GaussianOptic(Optic):
-    def _generate_image(self) -> np.ndarray:
-        """Generate a Gaussian optic image."""
-        sigma = self.profile.sigma
-        x = np.linspace(-self.size / 2, self.size / 2, self.size)
-        y = np.linspace(-self.size / 2, self.size / 2, self.size)
-        xx, yy = np.meshgrid(x, y)
-        image = np.exp(-((xx**2 + yy**2) / (2 * sigma**2)))
-        return image
+    def generate_form(self) -> np.ndarray:
+        """Generate a Gaussian optic form."""
+        sigma = self.profile.sigma 
+        size = self.profile.size
+        x = np.linspace(-size / 2, size / 2, size)
+        y = np.linspace(-size / 2, size / 2, size)
+        xx, yy = np.meshgrid(x, y, indexing='ij')
+        return np.exp(-((xx**2 + yy**2) / (2 * sigma**2)))
 
 class RectangularOptic(Optic):
-    def _generate_image(self) -> np.ndarray:
-        """Generate a rectangular optic image."""
+    def generate_form(self) -> np.ndarray:
+        """Generate a rectangular optic form."""
         width = self.profile.width
         height = self.profile.height
-        image = np.zeros((self.size, self.size))
-        image[self.size//2-height//2:self.size//2+height//2, 
-                self.size//2-width//2:self.size//2+width//2] = 1
-        return image
+        size = self.profile.size
+        form = np.zeros((size, size))
+        form[size//2-height//2:size//2+height//2, 
+              size//2-width//2:size//2+width//2] = 1
+        return form

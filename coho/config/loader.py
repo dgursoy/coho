@@ -1,12 +1,10 @@
-# config/loader.py
-
 """Configuration loader."""
 
 from pathlib import Path
 from typing import Union, Dict, Any
 
-from .models import RootConfig
-
+# Local imports
+from .models import ComponentsConfig
 from .reader import read_config
 from .builder import build_config
 
@@ -14,7 +12,7 @@ __all__ = [
     'load_config',
 ]
 
-def load_config(source: Union[str, Path, Dict[str, Any]]) -> RootConfig:
+def load_config(source: Union[str, Path, Dict[str, Any]]) -> ComponentsConfig:
     """Load configuration from source."""
     raw_config = read_config(source)
     config_objects = build_config(raw_config)

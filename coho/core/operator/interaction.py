@@ -2,7 +2,7 @@
 
 import numpy as np
 import xraylib
-from typing import Union
+from typing import Union, TypeAlias
 
 # Local imports
 from . import Operator
@@ -16,52 +16,80 @@ __all__ = [
     'Interact',
 ]
 
+# Type alias for components
+Component: TypeAlias = Union[Optic, Sample, Detector]
+
 class Detect(Operator):
     """Detection handler."""
 
-    def __init__(self):
-        """Initialize the detection handler."""
-        self.wavefront = None
-
-    def _set_wavefront(self, wavefront: Wavefront):
-        """Set the wavefront."""
+    def __init__(self, wavefront: Wavefront = None):
+        """Initialize the detection operator."""
+        # Cache the wavefront
         self.wavefront = wavefront
     
     def apply(self, wavefront: Wavefront, component: Detector) -> np.ndarray:
-        """Apply square of the absolute value."""
-        self._set_wavefront(wavefront)
-        return np.square(np.abs(wavefront.phasor))
+        """Convert complex wavefront to measured intensity."""
+        self.wavefront = wavefront
+        return np.abs(wavefront.complexform) ** 2  
     
     def adjoint(self, intensity: np.ndarray, component: Detector) -> Wavefront:
-        """Adjoint of square root of the absolute value."""
-        self.wavefront.phasor = np.sqrt(intensity) * np.exp(1j * 0)
+        """Convert measured intensity back to complex wavefront."""
+        self.wavefront.complexform = np.sqrt(intensity)  # amplitude only, phase = 0
         return self.wavefront
 
 class Interact(Operator):
     """Wavefront modulation handler."""
 
-    def _compute_refractive_index(self, wavefront: Wavefront, component: Union[Optic, Sample, Detector]) -> float:
+    def _compute_refractive_index(self, wavefront: Wavefront, component: Component) -> np.ndarray:
         """Compute the complex refractive index of the optical component."""
-        return xraylib.Refractive_Index(
-            component.physical.formula,
-            wavefront.physical.energy,
-            component.physical.density
-        )
+        # Get values directly without intermediate reshaping
+        formula = component.physical.formula
+        energy = wavefront.physical.energy
+        density = component.physical.density
+        return xraylib.Refractive_Index(formula, energy, density)
     
-    def _interact(self, wavefront: Wavefront, component: Union[Optic, Sample, Detector]) -> float:
-        """Compute phase shift."""
-        refractive_index = self._compute_refractive_index(wavefront, component)
-        return wavefront.wavenumber * (refractive_index - 1) * component.physical.thickness * component.image
-        
-    def apply(self, wavefront: Wavefront, component: Union[Optic, Sample, Detector]) -> Wavefront:
-        """Apply amplitude and phase modifications."""
-        modulation = self._interact(wavefront, component)
-        wavefront.phasor *= np.exp(1j * modulation)
+    def _get_exponent(self, wavefront: Wavefront, component: Component) -> float:
+        """Compute the exponent of the transfer function."""
+        # Get terms with proper shapes
+        wavenumber = wavefront.wavenumber
+        thickness = component.physical.thickness
+        delta_n = self._compute_refractive_index(wavefront, component) - 1 
+        return (wavenumber * delta_n * thickness) * component.form
+    
+    def _apply_transfer_function(self, wavefront: Wavefront, component: Component, conjugate: bool = False) -> Wavefront:
+        """Apply transfer function."""
+        # Generate transfer function if not specified by the component
+        if component.complexform is None:
+            exponent = self._get_exponent(wavefront, component)
+            sign = -1 if conjugate else 1
+            transfer_function = np.exp(sign * 1j * exponent)
+            component.complexform = transfer_function
+            
+        # Handle tiling in forward direction
+        if component.complexform.shape[0] > wavefront.complexform.shape[0]:
+            # Ensure complex dtype when tiling
+            wavefront.complexform = np.tile(wavefront.complexform, 
+                                          (component.complexform.shape[0], 1, 1)).astype(np.complex128)
+            
+        # Ensure both arrays are complex before multiplication
+        if not np.iscomplexobj(wavefront.complexform):
+            wavefront.complexform = wavefront.complexform.astype(np.complex128)
+            
+        wavefront.complexform *= component.complexform
         return wavefront
     
-    def adjoint(self, wavefront: Wavefront, component: Union[Optic, Sample, Detector]) -> Wavefront:
-        """Reverse amplitude and phase modifications."""
-        modulation = self._interact(wavefront, component)
-        wavefront.phasor *= np.exp(-1j * modulation)
+    def apply(self, wavefront: Wavefront, component: Component) -> Wavefront:
+        """Forward propagation through the optical component."""
+        return self._apply_transfer_function(wavefront, component)
+    
+    def adjoint(self, wavefront: Wavefront, component: Component) -> Wavefront:
+        """Reverse propagation through the optical component."""
+        # Apply conjugate transfer function
+        wavefront = self._apply_transfer_function(wavefront, component, conjugate=True)
+        
+        # Handle un-tiling (mean) in adjoint direction
+        if component.complexform.shape[0] > 1 and wavefront.complexform.shape[0] > 1:
+            wavefront.complexform = np.mean(wavefront.complexform, axis=0, keepdims=True)
+            
         return wavefront
 

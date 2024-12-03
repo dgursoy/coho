@@ -1,61 +1,56 @@
-# core/optimization/solver.py
+"""Solver classes for optimization."""
 
-"""Base classes for iterative solvers.
-
-Classes:
-    IterativeSolver: Abstract base class for iterative solvers.
-    ConvergenceCriterion: Abstract base class for convergence checks.
-"""
-
+# Standard imports
 from abc import ABC, abstractmethod
 import numpy as np
-from coho.core.optimization.objective import Objective
-from coho.config.models import SolverProperties
 
-__all__ = [
-    'GradientDescent'
-]   
-
+# Local imports
+from .cost import Objective
+from ..component.wave import Wave
 
 class Solver(ABC):
     """Base class for all solvers."""
     
-    def __init__(self, properties: SolverProperties) -> None:
-        """Initialize solver.
-        
-        Args:
-            id: Unique identifier
-            parameters: Configuration dict
-        """
-        self.properties = properties
+    def __init__(self, step_size: float, iterations: int, initial_guess: np.ndarray) -> None:
+        """Initialize solver."""
+        self.step_size = step_size
+        self.iterations = iterations
+        self.initial_guess = initial_guess
     
     @abstractmethod
     def solve(self) -> np.ndarray:
         """Solve the problem."""
         pass
-    
 
 class IterativeSolver(Solver):
     """Base class for iterative solvers."""
-    def __init__(self, properties: SolverProperties, objective: Objective) -> None:
-        super().__init__(properties)
+    def __init__(self, 
+                 objective: Objective,
+                 step_size: float = 0.1, 
+                 iterations: int = 100, 
+                 initial_guess: Wave = None) -> None:
+        super().__init__(step_size, iterations, initial_guess)
         self.objective = objective
         self._initialize_solver()
 
     def _initialize_solver(self) -> None:
         """Initialize solver."""
-        self.current = self.properties.initial_guess
+        self.current = self.initial_guess
     
-    def solve(self, target: np.ndarray) -> np.ndarray:
+    def solve(self) -> np.ndarray:
         """Run iterations until convergence or max iterations."""
         
-        for _ in range(self.properties.iterations):
-            self.current += self.update(target)    
+        for i in range(self.iterations):
+            # Evaluate current cost
+            cost = self.objective.evaluate(self.current)
+            print(f"Iteration {i+1}/{self.iterations}: Cost = {cost}")
+            # Update current estimate
+            self.current += self.update()    
             
         return self.current
     
     @abstractmethod
-    def update(self, target: np.ndarray) -> np.ndarray:
+    def update(self) -> np.ndarray:
         """Perform one iteration update."""
         pass
 
@@ -65,5 +60,5 @@ class GradientDescent(IterativeSolver):
     
     def update(self) -> np.ndarray:
         """Perform gradient descent update."""
-        return -self.properties.step_size * self.objective.gradient(self.current)
+        return -self.step_size * self.objective.gradient(self.current)
     

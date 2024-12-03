@@ -1,5 +1,3 @@
-# config/reader.py
-
 """Configuration file reading utilities.
 
 This module provides a unified interface for reading configuration files in
@@ -20,8 +18,7 @@ import yaml
 import json
 import tomli
 import os
-from .types import ConfigContent
-from typing import Literal
+from typing import Literal, Any, Dict
 
 __all__ = [
     'read_config',
@@ -30,7 +27,7 @@ __all__ = [
 # Supported encodings for file reading
 EncodingType = Literal['utf-8', 'ascii', 'latin-1']
 
-def read_config(file_path: PathLike, encoding: EncodingType = 'utf-8') -> ConfigContent:
+def read_config(file_path: PathLike, encoding: EncodingType = 'utf-8') -> Dict[str, Any]:
     """Read configuration from a file in any supported format.
     
     Args:
@@ -38,7 +35,7 @@ def read_config(file_path: PathLike, encoding: EncodingType = 'utf-8') -> Config
         encoding: File encoding (default: utf-8)
 
     Returns:
-        ConfigContent: Parsed configuration content in a dictionary
+        Dict[str, Any]: Parsed configuration content in a dictionary
 
     Raises:
         FileNotFoundError: If file doesn't exist
@@ -78,7 +75,7 @@ def read_config(file_path: PathLike, encoding: EncodingType = 'utf-8') -> Config
         return supported_formats[ext](path)
     return supported_formats[ext](path, encoding)
 
-def _read_yaml(file_path: str, encoding: EncodingType = 'utf-8') -> ConfigContent:
+def _read_yaml(file_path: str, encoding: EncodingType = 'utf-8') -> Dict[str, Any]:
     """Read YAML configuration.
 
     Args:
@@ -105,7 +102,7 @@ def _read_yaml(file_path: str, encoding: EncodingType = 'utf-8') -> ConfigConten
         # Include the problematic file path in the error
         raise yaml.YAMLError(f"YAML parse error in {file_path}: {str(e)}") from e
 
-def _read_json(file_path: str, encoding: EncodingType = 'utf-8') -> ConfigContent:
+def _read_json(file_path: str, encoding: EncodingType = 'utf-8') -> Dict[str, Any]:
     """Read JSON configuration.
 
     Args:
@@ -127,7 +124,7 @@ def _read_json(file_path: str, encoding: EncodingType = 'utf-8') -> ConfigConten
     except json.JSONDecodeError as e:
         raise json.JSONDecodeError(f"JSON parse error: {file_path}") from e
 
-def _read_toml(file_path: str) -> ConfigContent:
+def _read_toml(file_path: str) -> Dict[str, Any]:
     """Read TOML configuration.
 
     Args:

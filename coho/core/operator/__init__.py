@@ -4,12 +4,10 @@
 from .propagate import Propagate
 from .interact import Modulate, Detect
 from .scan import Broadcast
-from .base import Pipeline
 
 __all__ = [
     'Propagate',
     'Modulate',
     'Detect',
     'Broadcast',
-    'Pipeline'
     ]

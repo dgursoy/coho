@@ -2,6 +2,7 @@
 
 from .core import *
 from .core.optimization import *
+from .core.pipeline import *
 
 __all__ = [
     'Wave', 

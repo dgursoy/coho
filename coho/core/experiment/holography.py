@@ -1,1 +1,0 @@
-"""Holographic scan experiment."""

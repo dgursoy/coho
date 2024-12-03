@@ -2,6 +2,7 @@
 
 from .component import *
 from .operator import *
+from .pipeline import *
 
 __all__ = [
     'Wave',

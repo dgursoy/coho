@@ -8,10 +8,31 @@ from coho import Wave, Pipeline, Propagate, Modulate, Detect, Broadcast, Gradien
 # Load test images
 lena = np.load('./coho/resources/images/lena.npy')
 cameraman = np.load('./coho/resources/images/cameraman.npy')
+ship = np.load('./coho/resources/images/ship.npy')
+barbara = np.load('./coho/resources/images/barbara.npy')
 
 # Initialize waves
-sample = Wave(lena, energy=10.0, spacing=1e-4, position=0.0).normalize()
-wave = Wave(cameraman, energy=10.0, spacing=1e-4, position=0.0).normalize() 
+sample = Wave(cameraman * np.exp(ship / 255. * 1j), energy=10.0, spacing=1e-4, position=0.0).normalize()
+wave = Wave(lena * np.exp(barbara / 255. * 1j), energy=10.0, spacing=1e-4, position=0.0).normalize() 
+
+
+# # Plot results
+# plt.figure(figsize=(8, 4))
+
+# # Plot 2: Reconstruction
+# plt.subplot(132)
+# plt.imshow(sample.amplitude, cmap='gray')
+# plt.title('Reconstructed Sample')
+# plt.colorbar()
+# # Plot 2: Reconstruction
+# plt.subplot(133)
+# plt.imshow(sample.phase, cmap='gray')
+# plt.title('Reconstructed Sample')
+# plt.colorbar()
+
+# plt.tight_layout()
+# plt.show()
+
 wave += 0.5
 sample += 0.5
 wave0 = wave.normalize()
@@ -28,6 +49,7 @@ detector_position = 400
 source_to_sample = np.subtract(sample_positions, wave_positions)
 sample_to_detector = np.subtract(detector_position, sample_positions)
 
+
 # Prepare wave
 broadcast = Broadcast()
 wave0 = broadcast.apply(wave0, position=wave_positions)
@@ -43,13 +65,13 @@ pipeline = Pipeline([
 ])
 
 # Forward: Apply pipeline
-initial_guess = sample0.zeros_like()
 measurements = pipeline.apply(sample0)
 
 # Create objective with cost monitoring
 objective = LeastSquares(target=measurements, operator=pipeline)
 
 # Reconstruct sample with more iterations
+initial_guess = sample0.zeros_like()
 solver = GradientDescent(
     objective=objective,
     step_size=0.9,
@@ -64,7 +86,7 @@ reconstruction = solver.solve()
 plt.figure(figsize=(12, 4))
 
 # Plot 1: Convergence
-plt.subplot(121)
+plt.subplot(131)
 plt.semilogy(objective.cost_history, 'b-')
 plt.grid(True)
 plt.xlabel('Iteration')
@@ -72,8 +94,13 @@ plt.ylabel('Cost')
 plt.title('Convergence History')
 
 # Plot 2: Reconstruction
-plt.subplot(122)
-plt.imshow(np.abs(reconstruction.amplitude[0]), cmap='gray')
+plt.subplot(132)
+plt.imshow(reconstruction.amplitude[0], cmap='gray')
+plt.title('Reconstructed Sample')
+plt.colorbar()
+# Plot 2: Reconstruction
+plt.subplot(133)
+plt.imshow(reconstruction.phase[0], cmap='gray')
 plt.title('Reconstructed Sample')
 plt.colorbar()
 

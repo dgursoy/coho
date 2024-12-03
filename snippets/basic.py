@@ -34,34 +34,33 @@ detector_position = 400
 source_to_sample = np.subtract(sample_positions, wave_positions)
 sample_to_detector = np.subtract(detector_position, sample_positions)
 
-# Forward pipeline
-sample0 = broadcast.apply(sample0, position=sample_positions)
+# Initialize wave branch
 wave0 = broadcast.apply(wave0, position=wave_positions)
 wave = propagate.apply(wave0, distance=source_to_sample)
-wave = modulate.apply(wave, sample0)
-wave = propagate.apply(wave, distance=sample_to_detector)
-wave = modulate.apply(wave, detector)
-intensity = detect.apply(wave)
+
+# Forward pipeline
+sample = broadcast.apply(sample0, position=sample_positions)
+sample = modulate.apply(wave, sample0)
+sample = propagate.apply(sample, distance=sample_to_detector)
+sample = modulate.apply(sample, detector)
+intensity = detect.apply(sample)
 
 # Plot results
 plt.figure(figsize=(20, 5))
 num_positions = len(sample_positions)
 for i in range(num_positions):
     plt.subplot(1, num_positions, i+1)
-    plt.imshow(wave.amplitude[i], cmap='gray')
+    plt.imshow(sample.amplitude[i], cmap='gray')
     plt.colorbar()
 plt.tight_layout()
 plt.show()
 
 # Backward pipeline
-wave = detect.adjoint(intensity)
-wave = modulate.adjoint(wave, detector)
-wave = propagate.adjoint(wave, distance=sample_to_detector)
-sample = modulate.adjoint(wave, wave0) 
+sample = detect.adjoint(intensity)
+sample = modulate.adjoint(sample, detector)
+sample = propagate.adjoint(sample, distance=sample_to_detector)
+sample = modulate.adjoint(sample, wave0) 
 sample = broadcast.adjoint(sample, position=sample_positions)
-wave = modulate.adjoint(wave, sample0)
-wave = propagate.adjoint(wave, distance=source_to_sample)
-wave = broadcast.adjoint(wave, position=wave_positions)
 
 # Plot results
 plt.figure(figsize=(10, 5))

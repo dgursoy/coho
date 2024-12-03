@@ -1,6 +1,1 @@
-from .scan import *
-
-__all__ = [
-    'HolographyScan',
-]
-    
+from .holography import *

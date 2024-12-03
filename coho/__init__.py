@@ -1,9 +1,15 @@
 """Main package initialization."""
 
-# Configuration
-from .config import *
+from .core import *
+from .core.optimization import *
 
 __all__ = [
-    'read_config',
-    'load_config',
-]
+    'Wave', 
+    'Propagate', 
+    'Modulate', 
+    'Detect',
+    'Broadcast',
+    'Pipeline',
+    'GradientDescent',
+    'LeastSquares'
+    ]

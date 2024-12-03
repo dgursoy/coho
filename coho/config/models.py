@@ -19,7 +19,7 @@ class Physical:
     formula: Optional[BatchableStr] = "Au"
     density: Optional[BatchableFloat] = 19.3
     thickness: Optional[BatchableFloat] = 0.0001
-    distance: Optional[BatchableFloat] = 1.0
+    position: Optional[BatchableFloat] = 1.0
 
 # Generic Profile model
 @dataclass
@@ -46,5 +46,19 @@ class Components:
     detector: Optional[ComponentBase] = None 
 
 @dataclass
+class SolverProperties:
+    method: str
+    iterations: BatchableInt = 100
+    step_size: BatchableFloat = 0.1
+    initial_guess: Optional[BatchableFloat] = 0.0
+
+@dataclass
+class ObjectiveProperties:
+    weight: BatchableFloat = 1.0
+    regularization: BatchableFloat = 1e-4
+
+@dataclass
 class ComponentsConfig:
     components: Components
+    solver: Optional[SolverProperties] = None
+    objective: Optional[ObjectiveProperties] = None

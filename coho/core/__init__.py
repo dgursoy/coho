@@ -1,35 +1,13 @@
 """Core components and operators for optical simulation."""
 
 from .component import *
+from .operator import *
 
 __all__ = [
-    # Components
-    'UniformWavefront',
-    'GaussianWavefront',
-    'CustomWavefront',
-    'CircularOptic',
-    'CodedOptic',
-    'CustomOptic',
-    'GaussianOptic',
-    'RectangularOptic',
-    'BaboonSample',
-    'BarbaraSample',
-    'CameramanSample',
-    'CheckerboardSample',
-    'CustomSample',
-    'HouseSample',
-    'IndianSample',
-    'LenaSample',
-    'PeppersSample',
-    'SheppLoganSample',
-    'ShipSample',
-    'StandardDetector',
-    # Operators
+    'Wave',
     'Propagate',
-    'Interact',
+    'Modulate',
     'Detect',
-    'Rotate',
-    'Translate',
-    # Experiment
-    'HolographyScan',
+    'Broadcast',
+    'Pipeline'
 ]

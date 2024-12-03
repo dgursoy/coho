@@ -1,7 +1,7 @@
 """Configuration object builder."""
 
 from typing import Dict, Any
-from .models import ComponentsConfig, Components, ComponentBase, Physical, Profile
+from .models import ComponentsConfig, Components, ComponentBase, Physical, Profile, SolverProperties, ObjectiveProperties
 
 def build_config(config: Dict[str, Any]) -> ComponentsConfig:
     """Build configuration object."""
@@ -14,7 +14,14 @@ def build_config(config: Dict[str, Any]) -> ComponentsConfig:
         detector=_build_component(components_data.get('detector')) if 'detector' in components_data else None
     )
     
-    return ComponentsConfig(components=components)
+    solver = SolverProperties(**config.get('solver', {})) if 'solver' in config else None
+    objective = ObjectiveProperties(**config.get('objective', {})) if 'objective' in config else None
+    
+    return ComponentsConfig(
+        components=components,
+        solver=solver,
+        objective=objective
+    )
 
 def _build_component(data: Dict[str, Any]) -> ComponentBase:
     """Build a component from dictionary data."""

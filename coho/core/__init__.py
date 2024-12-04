@@ -10,5 +10,6 @@ __all__ = [
     'Modulate',
     'Detect',
     'Broadcast',
+    'Crop',
     'Pipeline'
 ]

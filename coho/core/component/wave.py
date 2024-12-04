@@ -1,6 +1,6 @@
 # Standard imports
 import numpy as np
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 
 class Wave:
     """A class representing a complex wave field."""
@@ -247,11 +247,15 @@ class Wave:
         self.form = rotate(self.form, angle, reshape=reshape, order=1)
         return self
 
-    def pad(self, pad_width: Union[int, Tuple[int, int]], mode: str = 'constant') -> 'Wave':
+    def pad(self, pad_width: Union[int, Tuple, List], 
+            mode: str = 'constant', constant_values: float = 0) -> 'Wave':
         """Pad wave with zeros or other values."""
         if isinstance(pad_width, (int, np.integer)):
-            pad_width = ((pad_width, pad_width), (pad_width, pad_width))
-        self.form = np.pad(self.form, pad_width, mode=mode)
+            pad_width = [(pad_width, pad_width)] * self.ndim
+        elif isinstance(pad_width, tuple) and len(pad_width) == 2:
+            pad_width = [pad_width] * self.ndim
+        
+        self.form = np.pad(self.form, pad_width, mode=mode, constant_values=constant_values)
         return self
     
     @property
@@ -292,5 +296,57 @@ class Wave:
     def invalidate_cache(self):
         """Invalidate caches when wave form changes."""
         self._freq2 = None
+
+    def multiply(self, n: int) -> 'Wave':
+        """Create multiple copies of the wave along a new first dimension."""
+        # Create new form with additional dimension
+        new_form = np.tile(self.form[np.newaxis, ...], (n, 1, 1))
+        
+        # Handle position
+        if self.position is not None:
+            new_position = np.full(n, self.position)
+        else:
+            new_position = None
+        
+        return Wave(
+            form=new_form,
+            energy=self.energy,
+            spacing=self.spacing,
+            position=new_position
+        )
+
+    def crop_to_match(self, reference: 'Wave', pad_value: float = 1.0) -> 'Wave':
+        """Crop or pad wave to match reference wave dimensions."""
+        if self.spacing != reference.spacing:
+            raise ValueError("Waves must have the same spacing")
+        
+        result = self.copy()
+        
+        # Get spatial dimensions (last two)
+        *batch_dims, ny, nx = self.shape
+        *ref_batch, ref_ny, ref_nx = reference.shape
+        
+        # Calculate padding/cropping for each spatial dimension
+        pad_y = max(0, (ref_ny - ny) // 2)
+        pad_x = max(0, (ref_nx - nx) // 2)
+        
+        # Pad if needed
+        if pad_y > 0 or pad_x > 0:
+            # No padding for batch dimensions
+            pad_width = [(0, 0)] * (self.ndim - 2) + [(pad_y, pad_y), (pad_x, pad_x)]
+            result.pad(pad_width, mode='constant', constant_values=pad_value)
+        
+        # Calculate crop slices
+        dy = (result.shape[-2] - ref_ny) // 2
+        dx = (result.shape[-1] - ref_nx) // 2
+        
+        # Create slices (keep batch dimensions unchanged)
+        slices = (slice(None),) * (self.ndim - 2) + (
+            slice(dy, dy + ref_ny),
+            slice(dx, dx + ref_nx)
+        )
+        
+        result.crop(slices)
+        return result
 
 

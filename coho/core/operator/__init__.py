@@ -2,7 +2,7 @@
 
 # Local imports
 from .propagate import Propagate
-from .interact import Modulate, Detect, Crop
+from .interact import Modulate, Detect, Crop, Shift
 from .scan import Broadcast
 
 __all__ = [
@@ -11,4 +11,5 @@ __all__ = [
     'Detect',
     'Broadcast',
     'Crop',
+    'Shift',
     ]

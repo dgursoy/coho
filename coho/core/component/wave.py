@@ -11,7 +11,8 @@ class Wave:
                  spacing: float = None, 
                  position: Union[float, np.ndarray] = None):
         """Initialize a wave."""
-        self.form = np.asarray(form, dtype=np.complex128)
+        form = np.asarray(form, dtype=np.complex128)
+        self.form = form[np.newaxis, ...] if form.ndim == 2 else form
         self.energy = energy
         self.spacing = spacing
         self.position = position 
@@ -298,9 +299,12 @@ class Wave:
         self._freq2 = None
 
     def multiply(self, n: int) -> 'Wave':
-        """Create multiple copies of the wave along a new first dimension."""
-        # Create new form with additional dimension
-        new_form = np.tile(self.form[np.newaxis, ...], (n, 1, 1))
+        """Create multiple copies of the wave along first dimension."""
+        # Remove first dimension if it's 1
+        base_form = self.form[0] if self.form.shape[0] == 1 else self.form
+        
+        # Create new form with n copies
+        new_form = np.stack([base_form] * n)
         
         # Handle position
         if self.position is not None:
@@ -309,7 +313,7 @@ class Wave:
             new_position = None
         
         return Wave(
-            form=new_form,
+            form=new_form,  # Will be (n, ny, nx)
             energy=self.energy,
             spacing=self.spacing,
             position=new_position

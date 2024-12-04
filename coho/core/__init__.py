@@ -11,5 +11,6 @@ __all__ = [
     'Detect',
     'Broadcast',
     'Crop',
+    'Shift',
     'Pipeline'
 ]

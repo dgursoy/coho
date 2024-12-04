@@ -10,7 +10,9 @@ from .base import Operator
 
 __all__ = [
     'Modulate', 
-    'Detect'
+    'Detect',
+    'Shift',
+    'Crop'
     ]
 
 class Modulate(Operator):
@@ -36,14 +38,6 @@ class Modulate(Operator):
                np.all(pos1 == pos2[0]) or \
                np.all(pos1[0] == pos2)
 
-    def __str__(self) -> str:
-        """Simple string representation."""
-        return "Wave modulation operator"
-
-    def __repr__(self) -> str:
-        """Detailed string representation."""
-        return f"{self.__class__.__name__}()"
-
 class Detect(Operator):
     """Detect wavefront intensity."""
 
@@ -56,15 +50,24 @@ class Detect(Operator):
         """Intensity to wavefront."""
         self.wave.form = intensity # No phase information
         return self.wave
-
-    def __str__(self) -> str:
-        """Simple string representation."""
-        return "Wave detection operator"
-
-    def __repr__(self) -> str:
-        """Detailed string representation."""
-        return f"{self.__class__.__name__}()"
     
+class Shift(Operator):
+    """Shift operator."""
+    
+    def apply(self, wave: Wave, y_shifts: np.ndarray, x_shifts: np.ndarray) -> Wave:
+        """Apply shifts to wave."""
+        # Shift each form in batch
+        shifted_forms = [
+            np.roll(np.roll(form, int(y), axis=-2), int(x), axis=-1)
+            for form, y, x in zip(wave.form, y_shifts, x_shifts)
+        ]
+        wave.form = np.stack(shifted_forms)
+        return wave
+    
+    def adjoint(self, wave: Wave, y_shifts: np.ndarray, x_shifts: np.ndarray) -> Wave:
+        """Adjoint shift operation."""
+        return self.apply(wave, -y_shifts, -x_shifts)
+
 class Crop(Operator):
     """Crop wavefront to match dimensions of another wave."""
 
@@ -74,11 +77,5 @@ class Crop(Operator):
 
     def adjoint(self, reference: Wave, modulator: Wave) -> Wave:
         """Adjoint crop operation: restores original modulator shape. """
-        return reference.crop_to_match(modulator, pad_value=0.0)
+        return reference.crop_to_match(modulator, pad_value=1.0)
 
-    def __str__(self) -> str:
-        return "Wave crop operator"
-
-    def __repr__(self) -> str:
-        """Detailed string representation."""
-        return f"{self.__class__.__name__}()"

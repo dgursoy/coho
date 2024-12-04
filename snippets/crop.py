@@ -5,7 +5,7 @@ from scipy.ndimage import zoom
 
 # Local imports
 from coho.core.component import Wave
-from coho.core.operator import Crop, Broadcast 
+from coho.core.operator import Crop, Broadcast, Shift
 
 # Load test images
 lena = np.load('./coho/resources/images/lena.npy') + 256.
@@ -13,35 +13,41 @@ cameraman = np.load('./coho/resources/images/cameraman.npy') + 256.
 lena_zoom = zoom(lena, 0.25)
 
 # Initialize waves
-modulator = Wave(lena[0:512, 0:256], energy=10.0, spacing=1e-4, position=0.0).normalize().multiply(6)
-reference = Wave(cameraman[0:128, 0:256], energy=10.0, spacing=1e-4, position=0.0).normalize().multiply(6)
+modulator = Wave(lena[0:512, 0:512], energy=10.0, spacing=1e-4, position=0.0).normalize().multiply(3)
+reference = Wave(cameraman[0:256, 0:256], energy=10.0, spacing=1e-4, position=0.0).normalize().multiply(6)
 
+def test_shift_padding():
+    wave = modulator
+    
+    # Define shifts including large shifts
+    y_shifts = np.array([200, 100, 50])
+    x_shifts = np.array([50, 10, -50])
+    
+    # Create operators
+    shift_op = Shift()
+    
+    # Apply operations (in-place)
+    shifted = shift_op.apply(wave, y_shifts, x_shifts)
+    shifted_copy = shifted.copy()
+    restored = shift_op.adjoint(shifted, y_shifts, x_shifts)
+    
+    # Visualize
+    for m in range(shifted.shape[0]):
+        plt.figure(figsize=(12, 5))
+        plt.subplot(1, 3, 1)
+        plt.imshow(wave.amplitude[0])
+        plt.title('Original')
+        plt.colorbar()
+        plt.subplot(1, 3, 2)
+        plt.imshow(shifted_copy.amplitude[m])
+        plt.title('Shifted')
+        plt.colorbar()
+        plt.subplot(1, 3, 3)
+        plt.imshow(restored.amplitude[m])
+        plt.colorbar()
+        plt.title('Restored')
+        plt.tight_layout()
+        plt.show()
 
-crop_op = Crop()
-
-# Forward: modify wave to match reference
-modified = crop_op.apply(reference, modulator)     # modulator -> reference size
-print(f"Forward operation:")
-print(f"modulator shape: {modulator.shape}")
-print(f"Reference shape: {reference.shape}")
-print(f"Modified shape: {modified.shape}")
-
-# Adjoint: restore modulator shape
-restored = crop_op.adjoint(modified, modulator)    # back to modulator size
-print(f"\nAdjoint operation:")
-print(f"Modified shape: {modified.shape}")
-print(f"modulator shape: {modulator.shape}")
-print(f"Restored shape: {restored.shape}")
-
-# Visualize
-fig, axes = plt.subplots(2, 2, figsize=(10, 10))
-axes[0, 0].imshow(modulator.amplitude[2])
-axes[0, 0].set_title('modulator Wave')
-axes[0, 1].imshow(reference.amplitude[2])
-axes[0, 1].set_title('Reference Wave')
-axes[1, 0].imshow(modified.amplitude[2])
-axes[1, 0].set_title('Modified to Reference Size')
-axes[1, 1].imshow(restored.amplitude[2])
-axes[1, 1].set_title('Restored to modulator Size')
-plt.tight_layout()
-plt.show()
+if __name__ == "__main__":
+    test_shift_padding()

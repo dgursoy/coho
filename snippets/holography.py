@@ -17,7 +17,7 @@ sample = Wave(cameraman, energy=10.0, spacing=1e-4, position=0.0).normalize()
 detector = Wave(np.ones_like(lena), energy=10.0, spacing=1e-4, position=400.0).normalize()
 
 # Create sample wave at multiple positions
-sample_positions = [0., 100., 200., 300.]  # Multiple sample positions
+sample_positions = [100]  # Multiple sample positions
 
 # Create and run pipeline
 pipeline = MultiDistanceHolography(reference, detector, sample_positions)

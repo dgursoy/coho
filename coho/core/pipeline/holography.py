@@ -25,14 +25,14 @@ class MultiDistanceHolography(Pipeline):
         
         # Prepare detector wave
         detector_positions = np.full_like(self.sample_positions, detector.position)
-        prepared_detector = Broadcast().apply(detector, position=detector_positions)
+        prepared_detector = Broadcast('position').apply(detector, values=detector_positions)
         
         # Calculate propagation distances
         sample_to_detector = detector.position - self.sample_positions
         
         # Initialize pipeline with prepared waves
         super().__init__([
-            (Broadcast(), {'position': self.sample_positions}),
+            (Broadcast('position'), {'values': self.sample_positions}),
             (Modulate(), {'modulator': prepared_reference}),
             (Propagate(), {'distance': sample_to_detector}),
             (Modulate(), {'modulator': prepared_detector}),
@@ -42,7 +42,7 @@ class MultiDistanceHolography(Pipeline):
     def _prepare_reference(self, reference: Wave) -> Wave:
         """Prepare reference wave by broadcasting and propagating."""
         wave_positions = np.full_like(self.sample_positions, reference.position)
-        wave = Broadcast().apply(reference, position=wave_positions)
+        wave = Broadcast('position').apply(reference, values=wave_positions)
         distances = self.sample_positions - wave.position
         return Propagate().apply(wave, distance=distances)
     

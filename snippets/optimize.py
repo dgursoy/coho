@@ -6,14 +6,14 @@ import matplotlib.pyplot as plt
 from coho import Wave, Pipeline, Propagate, Modulate, Detect, Broadcast, GradientDescent, LeastSquares
 
 # Load test images
-lena = np.load('./coho/resources/images/lena.npy')
-cameraman = np.load('./coho/resources/images/cameraman.npy')
-ship = np.load('./coho/resources/images/ship.npy')
-barbara = np.load('./coho/resources/images/barbara.npy')
+lena = np.load('./coho/resources/images/lena.npy') / 255.
+cameraman = np.load('./coho/resources/images/cameraman.npy') / 255.
+ship = np.load('./coho/resources/images/ship.npy') / 255.
+barbara = np.load('./coho/resources/images/barbara.npy') / 255.
 
 # Initialize waves
-sample = Wave(cameraman * np.exp(ship / 255. * 1j), energy=10.0, spacing=1e-4, position=0.0).normalize()
-wave = Wave(lena * np.exp(barbara / 255. * 1j), energy=10.0, spacing=1e-4, position=0.0).normalize() 
+sample = Wave(cameraman * np.exp(ship * 1j), energy=10.0, spacing=1e-4, position=0.0).normalize()
+wave = Wave(lena * np.exp(barbara * 1j), energy=10.0, spacing=1e-4, position=0.0).normalize() 
 
 
 # # Plot results
@@ -49,15 +49,14 @@ detector_position = 400
 source_to_sample = np.subtract(sample_positions, wave_positions)
 sample_to_detector = np.subtract(detector_position, sample_positions)
 
-
 # Prepare wave
-broadcast = Broadcast()
-wave0 = broadcast.apply(wave0, position=wave_positions)
+broadcast = Broadcast('position')
+wave0 = broadcast.apply(wave0, values=wave_positions)
 wave = Propagate().apply(wave0, distance=source_to_sample)
 
 # Define pipeline
 pipeline = Pipeline([
-    (Broadcast(), {'position': sample_positions}),
+    (Broadcast('position'), {'values': sample_positions}),
     (Modulate(), {'modulator': wave}),
     (Propagate(), {'distance': sample_to_detector}),
     (Modulate(), {'modulator': detector}),
@@ -75,7 +74,7 @@ initial_guess = sample0.zeros_like()
 solver = GradientDescent(
     objective=objective,
     step_size=0.9,
-    iterations=50,  
+    iterations=110,  
     initial_guess=initial_guess
 )
 

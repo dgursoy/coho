@@ -9,15 +9,23 @@ from .base import Operator
 from ..component import Wave
 
 class Broadcast(Operator):
-    """Broadcast wave to multiple positions."""
+    """Broadcast wave across multiple parameter values."""
     
-    def _prepare_position(self, position: Union[List[float], np.ndarray]) -> np.ndarray:
-        """Convert position to float array."""
-        return np.asarray(position, dtype=float)
+    def __init__(self, param_name: str = 'position'):
+        """Initialize broadcaster.
+        
+        Args:
+            param_name: Name of the wave parameter to broadcast over
+        """
+        self.param_name = param_name
 
-    def apply(self, wave: Wave, position: Union[List[float], np.ndarray]) -> Wave:
+    def _prepare_values(self, values: Union[List[float], np.ndarray]) -> np.ndarray:
+        """Convert parameter values to float array."""
+        return np.asarray(values, dtype=float)
+
+    def apply(self, wave: Wave, values: Union[List[float], np.ndarray]) -> Wave:
         """Forward broadcast."""
-        position = self._prepare_position(position)
+        values = self._prepare_values(values)
         
         # If wave is already broadcasted, reshape instead of adding new dimension
         if wave.form.ndim > 2:
@@ -25,22 +33,22 @@ class Broadcast(Operator):
         else:
             wave.form = wave.form[np.newaxis, ...]
         
-        # Now broadcast to correct number of positions
-        wave.form = np.broadcast_to(wave.form, (len(position), *wave.form.shape[-2:]))
-        wave.position = position
+        # Now broadcast to correct number of values
+        wave.form = np.broadcast_to(wave.form, (len(values), *wave.form.shape[-2:]))
+        setattr(wave, self.param_name, values)
         return wave
     
-    def adjoint(self, wave: Wave, position: Union[List[float], np.ndarray]) -> Wave:
+    def adjoint(self, wave: Wave, values: Union[List[float], np.ndarray]) -> Wave:
         """Adjoint broadcast."""
-        position = self._prepare_position(position)
+        values = self._prepare_values(values)
         wave.form = np.mean(wave.form, axis=0)
-        wave.position = position[0]
+        setattr(wave, self.param_name, values[0])
         return wave
 
     def __str__(self) -> str:
         """Simple string representation."""
-        return "Broadcast operator"
+        return f"Broadcast operator ({self.param_name})"
 
     def __repr__(self) -> str:
         """Detailed string representation."""
-        return f"{self.__class__.__name__}()"
+        return f"{self.__class__.__name__}(param_name='{self.param_name}')"

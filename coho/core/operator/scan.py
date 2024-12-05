@@ -6,6 +6,7 @@ import numpy as np
 
 # Local imports
 from .base import Operator
+from .decorators import validate_form
 from ..component import Wave
 
 class Broadcast(Operator):
@@ -17,7 +18,8 @@ class Broadcast(Operator):
             name: np.asarray(vals, dtype=float)
             for name, vals in values.items()
         }
-
+    
+    @validate_form
     def apply(self, wave: Wave, values: Dict[str, Union[List[float], np.ndarray]]) -> Wave:
         """Forward broadcast.
         
@@ -46,7 +48,7 @@ class Broadcast(Operator):
             setattr(wave, name, vals)
             
         return wave
-    
+       
     def adjoint(self, wave: Wave, values: Dict[str, Union[List[float], np.ndarray]]) -> Wave:
         """Adjoint broadcast."""
         values = self._prepare_values(values)
@@ -57,11 +59,3 @@ class Broadcast(Operator):
             setattr(wave, name, vals[0])
             
         return wave
-
-    def __str__(self) -> str:
-        """Simple string representation."""
-        return "Broadcast operator"
-
-    def __repr__(self) -> str:
-        """Detailed string representation."""
-        return self.__class__.__name__

@@ -17,9 +17,9 @@ class Wave:
         self.form = form[np.newaxis, ...] if form.ndim == 2 else form
         self.energy = energy
         self.spacing = spacing
-        self.position = position 
-        self.x = x
-        self.y = y
+        self.position = np.asarray(position, dtype=np.float64)  # Force float64
+        self.x = np.asarray(x, dtype=np.float64)  # Force float64
+        self.y = np.asarray(y, dtype=np.float64)  # Force float64
         self._freq2 = None  # Cache for freq2
 
     @property

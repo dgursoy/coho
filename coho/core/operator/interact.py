@@ -7,6 +7,12 @@ from typing import Tuple
 # Local imports
 from coho.core.component import Wave
 from .base import Operator
+from .decorators import (
+    validate_form,
+    validate_matching_energy,
+    validate_matching_position, 
+    validate_matching_dimensions,
+)
 
 __all__ = [
     'Modulate', 
@@ -18,25 +24,19 @@ __all__ = [
 class Modulate(Operator):
     """Modulate wavefront by another wavefront."""
 
+    @validate_matching_dimensions
+    @validate_matching_energy
+    @validate_matching_position
     def apply(self, reference: Wave, modulator: Wave) -> Wave:
         """Forward modulation."""
-        if not self._positions_match(reference.position, modulator.position):
-            raise ValueError("Positions of waves do not match: {} and {}".format(reference.position, modulator.position))
         return reference * modulator
 
+    @validate_matching_dimensions
+    @validate_matching_energy
+    @validate_matching_position
     def adjoint(self, reference: Wave, modulator: Wave) -> Wave:
         """Adjoint modulation."""
-        if not self._positions_match(reference.position, modulator.position):
-            raise ValueError("Positions of waves do not match: {} and {}".format(reference.position, modulator.position))
         return reference / modulator
-    
-    @staticmethod
-    def _positions_match(pos1, pos2) -> bool:
-        """Check if all elements in positions match, allowing for repeated arrays."""
-        pos1, pos2 = np.atleast_1d(pos1), np.atleast_1d(pos2)
-        return np.all(pos1 == pos2) or \
-               np.all(pos1 == pos2[0]) or \
-               np.all(pos1[0] == pos2)
 
 class Detect(Operator):
     """Detect wavefront intensity."""
@@ -45,7 +45,7 @@ class Detect(Operator):
         """Wavefront to intensity."""
         self.wave = wave # Save wave for adjoint
         return wave.amplitude
-
+    
     def adjoint(self, intensity: np.ndarray) -> Wave:
         """Intensity to wavefront."""
         self.wave.form = intensity # No phase information
@@ -53,7 +53,8 @@ class Detect(Operator):
     
 class Shift(Operator):
     """Shift operator."""
-    
+
+    @validate_form
     def apply(self, wave: Wave, y_shifts: np.ndarray, x_shifts: np.ndarray) -> Wave:
         """Apply shifts to wave."""
         # Shift each form in batch

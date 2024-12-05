@@ -1,7 +1,7 @@
 """Classes for simulating wavefront scanning."""
 
 # Standard imports
-from typing import Union, List
+from typing import Union, List, Dict
 import numpy as np
 
 # Local imports
@@ -11,44 +11,57 @@ from ..component import Wave
 class Broadcast(Operator):
     """Broadcast wave across multiple parameter values."""
     
-    def __init__(self, param_name: str = 'position'):
-        """Initialize broadcaster.
+    def _prepare_values(self, values: Dict[str, Union[List[float], np.ndarray]]) -> Dict[str, np.ndarray]:
+        """Convert parameter values to float arrays."""
+        return {
+            name: np.asarray(vals, dtype=float)
+            for name, vals in values.items()
+        }
+
+    def apply(self, wave: Wave, values: Dict[str, Union[List[float], np.ndarray]]) -> Wave:
+        """Forward broadcast.
         
         Args:
-            param_name: Name of the wave parameter to broadcast over
+            wave: Wave to broadcast
+            values: Dict mapping parameter names to their values
         """
-        self.param_name = param_name
-
-    def _prepare_values(self, values: Union[List[float], np.ndarray]) -> np.ndarray:
-        """Convert parameter values to float array."""
-        return np.asarray(values, dtype=float)
-
-    def apply(self, wave: Wave, values: Union[List[float], np.ndarray]) -> Wave:
-        """Forward broadcast."""
         values = self._prepare_values(values)
+        n_values = len(next(iter(values.values())))  # Length of first value array
         
+        # Verify all value arrays have same length
+        if not all(len(v) == n_values for v in values.values()):
+            raise ValueError("All parameter value arrays must have the same length")
+            
         # If wave is already broadcasted, reshape instead of adding new dimension
         if wave.form.ndim > 2:
             wave.form = wave.form.reshape(-1, *wave.form.shape[-2:])
         else:
             wave.form = wave.form[np.newaxis, ...]
         
-        # Now broadcast to correct number of values
-        wave.form = np.broadcast_to(wave.form, (len(values), *wave.form.shape[-2:]))
-        setattr(wave, self.param_name, values)
+        # Broadcast to correct number of values
+        wave.form = np.broadcast_to(wave.form, (n_values, *wave.form.shape[-2:]))
+        
+        # Set all parameter values
+        for name, vals in values.items():
+            setattr(wave, name, vals)
+            
         return wave
     
-    def adjoint(self, wave: Wave, values: Union[List[float], np.ndarray]) -> Wave:
+    def adjoint(self, wave: Wave, values: Dict[str, Union[List[float], np.ndarray]]) -> Wave:
         """Adjoint broadcast."""
         values = self._prepare_values(values)
         wave.form = np.mean(wave.form, axis=0)
-        setattr(wave, self.param_name, values[0])
+        
+        # Set first value for each parameter
+        for name, vals in values.items():
+            setattr(wave, name, vals[0])
+            
         return wave
 
     def __str__(self) -> str:
         """Simple string representation."""
-        return f"Broadcast operator ({self.param_name})"
+        return "Broadcast operator"
 
     def __repr__(self) -> str:
         """Detailed string representation."""
-        return f"{self.__class__.__name__}(param_name='{self.param_name}')"
+        return self.__class__.__name__

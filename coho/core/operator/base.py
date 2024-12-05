@@ -2,6 +2,8 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
+__all__ = ['Operator']
+
 class Operator(ABC):
     """Base class for operators."""
     

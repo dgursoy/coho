@@ -9,13 +9,17 @@ class Wave:
                  form: np.ndarray, 
                  energy: float = None, 
                  spacing: float = None, 
-                 position: Union[float, np.ndarray] = None):
+                 position: Union[float, np.ndarray] = 0.0,
+                 x: Union[float, np.ndarray] = 0.0,
+                 y: Union[float, np.ndarray] = 0.0):
         """Initialize a wave."""
         form = np.asarray(form, dtype=np.complex128)
         self.form = form[np.newaxis, ...] if form.ndim == 2 else form
         self.energy = energy
         self.spacing = spacing
         self.position = position 
+        self.x = x
+        self.y = y
         self._freq2 = None  # Cache for freq2
 
     @property
@@ -143,7 +147,9 @@ class Wave:
             f"Wave(shape={self.shape}, "
             f"energy={self.energy}, "
             f"spacing={self.spacing}, "
-            f"position={self.position})"
+            f"position={self.position}, "
+            f"x={self.x}, "
+            f"y={self.y})"
         )
 
     @property

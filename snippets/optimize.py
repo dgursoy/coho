@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Local imports
-from coho import Wave, Pipeline, Propagate, Modulate, Detect, Broadcast, GradientDescent, LeastSquares
+from coho import Wave, Pipeline, Propagate, Modulate, Detect, Broadcast, GradientDescent, LeastSquares, MultiDistanceHolography
 
 # Load test images
 lena = np.load('./coho/resources/images/lena.npy') / 255.
@@ -14,25 +14,6 @@ barbara = np.load('./coho/resources/images/barbara.npy') / 255.
 # Initialize waves
 sample = Wave(cameraman * np.exp(ship * 1j), energy=10.0, spacing=1e-4, position=0.0).normalize()
 wave = Wave(lena * np.exp(barbara * 1j), energy=10.0, spacing=1e-4, position=0.0).normalize() 
-
-
-# # Plot results
-# plt.figure(figsize=(8, 4))
-
-# # Plot 2: Reconstruction
-# plt.subplot(132)
-# plt.imshow(sample.amplitude, cmap='gray')
-# plt.title('Reconstructed Sample')
-# plt.colorbar()
-# # Plot 2: Reconstruction
-# plt.subplot(133)
-# plt.imshow(sample.phase, cmap='gray')
-# plt.title('Reconstructed Sample')
-# plt.colorbar()
-
-# plt.tight_layout()
-# plt.show()
-
 wave += 0.5
 sample += 0.5
 wave0 = wave.normalize()
@@ -50,13 +31,13 @@ source_to_sample = np.subtract(sample_positions, wave_positions)
 sample_to_detector = np.subtract(detector_position, sample_positions)
 
 # Prepare wave
-broadcast = Broadcast('position')
-wave0 = broadcast.apply(wave0, values=wave_positions)
+broadcast = Broadcast()
+wave0 = broadcast.apply(wave0, {'position': wave_positions})
 wave = Propagate().apply(wave0, distance=source_to_sample)
 
 # Define pipeline
 pipeline = Pipeline([
-    (Broadcast('position'), {'values': sample_positions}),
+    (Broadcast(), {'values': {'position': sample_positions}}),
     (Modulate(), {'modulator': wave}),
     (Propagate(), {'distance': sample_to_detector}),
     (Modulate(), {'modulator': detector}),
@@ -74,7 +55,7 @@ initial_guess = sample0.zeros_like()
 solver = GradientDescent(
     objective=objective,
     step_size=0.9,
-    iterations=110,  
+    iterations=40,  
     initial_guess=initial_guess
 )
 

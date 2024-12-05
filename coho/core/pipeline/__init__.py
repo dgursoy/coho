@@ -1,10 +1,11 @@
 """Pipeline implementations for various experiments."""
 
 # Local imports
-from .base import Pipeline
-from .holography import MultiDistanceHolography
+from .base import *
+from .holography import *
 
 __all__ = [
     'Pipeline',
-    'MultiDistanceHolography'
+    'MultiDistanceHolography',
+    'CodedHolography'
 ]

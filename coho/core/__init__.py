@@ -12,5 +12,8 @@ __all__ = [
     'Broadcast',
     'Crop',
     'Shift',
-    'Pipeline'
+    'Operator',
+    'Pipeline',
+    'MultiDistanceHolography',
+    'CodedHolography'
 ]

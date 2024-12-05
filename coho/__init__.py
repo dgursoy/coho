@@ -10,7 +10,10 @@ __all__ = [
     'Modulate', 
     'Detect',
     'Broadcast',
-    'Pipeline',
     'GradientDescent',
-    'LeastSquares'
+    'LeastSquares',
+    'Pipeline',
+    'Operator',
+    'MultiDistanceHolography',
+    'CodedHolography'
     ]

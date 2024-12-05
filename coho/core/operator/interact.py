@@ -21,13 +21,13 @@ class Modulate(Operator):
     def apply(self, reference: Wave, modulator: Wave) -> Wave:
         """Forward modulation."""
         if not self._positions_match(reference.position, modulator.position):
-            raise ValueError("Positions of waves do not match.")
+            raise ValueError("Positions of waves do not match: {} and {}".format(reference.position, modulator.position))
         return reference * modulator
 
     def adjoint(self, reference: Wave, modulator: Wave) -> Wave:
         """Adjoint modulation."""
         if not self._positions_match(reference.position, modulator.position):
-            raise ValueError("Positions of waves do not match.")
+            raise ValueError("Positions of waves do not match: {} and {}".format(reference.position, modulator.position))
         return reference / modulator
     
     @staticmethod

@@ -1,8 +1,12 @@
 """Core components and operators for optical simulation."""
 
-from .component import *
-from .operator import *
-from .pipeline import *
+from .component.wave import Wave
+from .operator.base import Operator
+from .operator.propagate import Propagate
+from .operator.interact import Modulate, Detect, Crop, Shift
+from .operator.scan import Broadcast
+from .pipeline import MultiDistanceHolography, CodedHolography
+from .optimization import GradientDescent, LeastSquares
 
 __all__ = [
     'Wave',
@@ -13,7 +17,8 @@ __all__ = [
     'Crop',
     'Shift',
     'Operator',
-    'Pipeline',
     'MultiDistanceHolography',
-    'CodedHolography'
+    'CodedHolography',
+    'GradientDescent',
+    'LeastSquares'
 ]

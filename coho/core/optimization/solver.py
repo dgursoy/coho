@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 # Local imports
-from .cost import Objective
+from .cost import Cost
 from ..component.wave import Wave
 
 class Solver(ABC):
@@ -25,12 +25,12 @@ class Solver(ABC):
 class IterativeSolver(Solver):
     """Base class for iterative solvers."""
     def __init__(self, 
-                 objective: Objective,
+                 cost: Cost,
                  step_size: float = 0.1, 
                  iterations: int = 100, 
                  initial_guess: Wave = None) -> None:
         super().__init__(step_size, iterations, initial_guess)
-        self.objective = objective
+        self.cost = cost
         self._initialize_solver()
 
     def _initialize_solver(self) -> None:
@@ -42,7 +42,7 @@ class IterativeSolver(Solver):
         
         for i in range(self.iterations):
             # Evaluate current cost
-            cost = self.objective.evaluate(self.current)
+            cost = self.cost.evaluate(self.current)
             print(f"Iteration {i+1}/{self.iterations}: Cost = {cost}")
             # Update current estimate
             self.current += self.update()    
@@ -60,5 +60,5 @@ class GradientDescent(IterativeSolver):
     
     def update(self) -> np.ndarray:
         """Perform gradient descent update."""
-        return -self.step_size * self.objective.gradient(self.current)
+        return -self.step_size * self.cost.gradient(self.current)
     

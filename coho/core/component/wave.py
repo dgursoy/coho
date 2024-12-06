@@ -1,63 +1,77 @@
-# Standard imports
-import numpy as np
 from typing import Union, Tuple, List
+import torch
 
 class Wave:
-    """A class representing a complex wave field."""
+    """A class representing a complex wave field using PyTorch tensors."""
     
     def __init__(self,
-                 form: np.ndarray, 
+                 form: torch.Tensor, 
                  energy: float = None, 
                  spacing: float = None, 
-                 position: Union[float, np.ndarray] = 0.0,
-                 x: Union[float, np.ndarray] = 0.0,
-                 y: Union[float, np.ndarray] = 0.0):
+                 position: Union[float, torch.Tensor] = 0.0,
+                 x: Union[float, torch.Tensor] = 0.0,
+                 y: Union[float, torch.Tensor] = 0.0,
+                 device: Union[str, torch.device] = 'cpu'):
         """Initialize a wave."""
-        form = np.asarray(form, dtype=np.complex128)
-        self.form = form[np.newaxis, ...] if form.ndim == 2 else form
+        # Convert device string to torch.device if needed
+        if isinstance(device, str):
+            device = torch.device(device)
+            
+        # Ensure complex tensor
+        if not form.is_complex():
+            form = form.to(torch.complex128)
+            
+        # Move to specified device
+        if device is not None:
+            form = form.to(device)
+        
+        # Add batch dimension if needed
+        self.form = form.unsqueeze(0) if form.dim() == 2 else form
+
+        # Store attributes
         self.energy = energy
         self.spacing = spacing
-        self.position = np.asarray(position, dtype=np.float64)  # Force float64
-        self.x = np.asarray(x, dtype=np.float64)  # Force float64
-        self.y = np.asarray(y, dtype=np.float64)  # Force float64
-        self._freq2 = None  # Cache for freq2
+        self.position = torch.as_tensor(position, dtype=torch.float64, device=form.device)
+        self.x = torch.as_tensor(x, dtype=torch.float64, device=form.device)
+        self.y = torch.as_tensor(y, dtype=torch.float64, device=form.device)
+        self._freq2 = None # Cache for squared frequencies
 
     @property
     def wavelength(self) -> float:
         """Wavelength derived from energy in keV."""
-        return np.divide(1.23984193e-7, self.energy)
+        return torch.divide(1.23984193e-7, self.energy)
     
     @property
     def wavenumber(self) -> float:
         """Wavenumber (2π divided by wavelength)."""
-        return np.divide(2 * np.pi, self.wavelength)
+        return torch.divide(2 * torch.pi, self.wavelength)
 
     @property
-    def real(self) -> np.ndarray:
+    def real(self) -> torch.Tensor:
         """Real part of wave form."""
         return self.form.real
 
     @property
-    def imag(self) -> np.ndarray:
+    def imag(self) -> torch.Tensor:
         """Imaginary part of wave form."""
         return self.form.imag
 
     @property
-    def amplitude(self) -> np.ndarray:
+    def amplitude(self) -> torch.Tensor:
         """Amplitude (absolute value) of wave form."""
-        return np.abs(self.form)
+        return torch.abs(self.form)
 
     @property
-    def phase(self) -> np.ndarray:
+    def phase(self) -> torch.Tensor:
         """Phase of wave form."""
-        return np.angle(self.form)
+        return torch.angle(self.form)
     
     def conjugate(self) -> 'Wave':
         """Conjugate the wave."""
-        self.form = np.conjugate(self.form)
+        self.form = torch.conj(self.form)
         return self
 
-    def _prepare_broadcast(self, other: Union['Wave', float, int]) -> Tuple[np.ndarray, np.ndarray]:
+    def _prepare_broadcast(self, other: Union['Wave', float, int]) -> Tuple[torch.Tensor, torch.Tensor]:
         """Prepare arrays for multiplication without broadcasting."""
         form1 = self.form
         
@@ -153,26 +167,26 @@ class Wave:
         )
 
     @property
-    def intensity(self) -> np.ndarray:
+    def intensity(self) -> torch.Tensor:
         """Intensity of the wave (|ψ|²)."""
-        return np.abs(self.form) ** 2
+        return torch.abs(self.form) ** 2
 
     @property
     def norm(self) -> float:
         """L2 norm of the wave form."""
-        return np.sqrt((np.abs(self.form) ** 2).sum())
+        return torch.sqrt((torch.abs(self.form) ** 2).sum())
 
     def normalize(self, eps: float = 1e-10) -> 'Wave':
-        """Normalize the wave."""
-        self.form /= np.max(self.form) + eps
+        """Normalize wave by its maximum amplitude."""
+        self.form /= (torch.max(torch.abs(self.form)) + eps)
         return self
 
     def overlap(self, other: 'Wave') -> complex:
         """Calculate complex overlap integral <ψ1|ψ2>."""
-        return np.sum(np.conjugate(self.form) * other.form)
+        return torch.sum(torch.conj(self.form) * other.form)
 
     @property
-    def freqs(self) -> Tuple[np.ndarray, np.ndarray]:
+    def freqs(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """Get 2D spatial frequency coordinates (fy, fx).
         
         Works with both 2D and ND arrays, operating on last two dimensions.
@@ -184,21 +198,21 @@ class Wave:
         *batch_dims, ny, nx = self.form.shape
         
         # Create base frequencies
-        fx = np.fft.fftfreq(nx, d=self.spacing)
-        fy = np.fft.fftfreq(ny, d=self.spacing)
+        fx = torch.fft.fftfreq(nx, d=self.spacing)
+        fy = torch.fft.fftfreq(ny, d=self.spacing)
         
         # Create 2D meshgrid
-        fy, fx = np.meshgrid(fy, fx, indexing='ij')
+        fy, fx = torch.meshgrid(fy, fx, indexing='ij')
         
         # Add batch dimensions if needed
         for _ in batch_dims:
-            fy = fy[np.newaxis, ...]
-            fx = fx[np.newaxis, ...]
+            fy = fy[torch.newaxis, ...]
+            fx = fx[torch.newaxis, ...]
         
         return fy, fx
 
     @property
-    def freq2(self) -> np.ndarray:
+    def freq2(self) -> torch.Tensor:
         """Get squared spatial frequencies (fx² + fy²)."""
         if self._freq2 is None:
             fy, fx = self.freqs
@@ -229,12 +243,12 @@ class Wave:
         return (-yext/2, yext/2, -xext/2, xext/2)
 
     @property
-    def coords(self) -> Tuple[np.ndarray, np.ndarray]:
+    def coords(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """Physical coordinates (y, x) in meters."""
         ny, nx = self.shape
-        x = (np.arange(nx) - nx//2) * self.spacing
-        y = (np.arange(ny) - ny//2) * self.spacing
-        return np.meshgrid(y, x, indexing='ij')
+        x = (torch.arange(nx) - nx//2) * self.spacing
+        y = (torch.arange(ny) - ny//2) * self.spacing
+        return torch.meshgrid(y, x, indexing='ij')
 
     def crop(self, roi: Tuple[slice, slice]) -> 'Wave':
         """Crop wave to region of interest."""
@@ -243,39 +257,33 @@ class Wave:
 
     def shift(self, shift: Union[int, Tuple[int, int]]) -> 'Wave':
         """Shift wave by pixels."""
-        if isinstance(shift, (int, np.integer)):
+        if isinstance(shift, (int, torch.Tensor)):
             shift = (shift, shift)
-        self.form = np.roll(np.roll(self.form, shift[0], axis=0), shift[1], axis=1)
-        return self
-
-    def rotate(self, angle: float, reshape: bool = False) -> 'Wave':
-        """Rotate wave by angle in degrees."""
-        from scipy.ndimage import rotate
-        self.form = rotate(self.form, angle, reshape=reshape, order=1)
+        self.form = torch.roll(torch.roll(self.form, shift[0], axis=0), shift[1], axis=1)
         return self
 
     def pad(self, pad_width: Union[int, Tuple, List], 
             mode: str = 'constant', constant_values: float = 0) -> 'Wave':
         """Pad wave with zeros or other values."""
-        if isinstance(pad_width, (int, np.integer)):
+        if isinstance(pad_width, (int, torch.Tensor)):
             pad_width = [(pad_width, pad_width)] * self.ndim
         elif isinstance(pad_width, tuple) and len(pad_width) == 2:
             pad_width = [pad_width] * self.ndim
         
-        self.form = np.pad(self.form, pad_width, mode=mode, constant_values=constant_values)
+        self.form = torch.nn.functional.pad(self.form, pad_width, mode=mode, value=constant_values)
         return self
     
     @property
-    def mean(self) -> np.ndarray:
+    def mean(self) -> torch.Tensor:
         """Return mean along the first axis if ndim > 2."""
         if self.ndim <= 2:
             return self.form
-        return np.mean(self.form, axis=0, keepdims=True)
+        return torch.mean(self.form, axis=0, keepdims=True)
     
     def zeros_like(self) -> 'Wave':
         """Create a new wave with zeros and same properties as current wave."""
         return Wave(
-            form=np.zeros_like(self.form),
+            form=torch.zeros_like(self.form),
             energy=self.energy,
             spacing=self.spacing,
             position=self.position
@@ -284,7 +292,7 @@ class Wave:
     def ones_like(self) -> 'Wave':
         """Create a new wave with ones and same properties as current wave."""
         return Wave(
-            form=np.ones_like(self.form),
+            form=torch.ones_like(self.form),
             energy=self.energy,
             spacing=self.spacing,
             position=self.position
@@ -293,7 +301,7 @@ class Wave:
     def copy(self) -> 'Wave':
         """Create a copy of the wave with same properties."""
         wave = Wave(
-            form=self.form.copy(),  # numpy array copy
+            form=self.form.clone(),  # numpy array copy
             energy=self.energy,
             spacing=self.spacing,
             position=self.position
@@ -310,11 +318,11 @@ class Wave:
         base_form = self.form[0] if self.form.shape[0] == 1 else self.form
         
         # Create new form with n copies
-        new_form = np.stack([base_form] * n)
+        new_form = torch.stack([base_form] * n)
         
         # Handle position
         if self.position is not None:
-            new_position = np.full(n, self.position)
+            new_position = torch.full(n, self.position)
         else:
             new_position = None
         
@@ -333,8 +341,8 @@ class Wave:
         result = self.copy()
         
         # Get spatial dimensions (last two)
-        *batch_dims, ny, nx = self.shape
-        *ref_batch, ref_ny, ref_nx = reference.shape
+        _, ny, nx = self.shape
+        _, ref_ny, ref_nx = reference.shape
         
         # Calculate padding/cropping for each spatial dimension
         pad_y = max(0, (ref_ny - ny) // 2)
@@ -358,5 +366,17 @@ class Wave:
         
         result.crop(slices)
         return result
+
+    def to(self, device: Union[str, torch.device]) -> 'Wave':
+        """Move wave to specified device."""
+        if isinstance(device, str):
+            device = torch.device(device)
+        
+        self.form = self.form.to(device)
+        self.position = self.position.to(device)
+        self.x = self.x.to(device)
+        self.y = self.y.to(device)
+        
+        return self
 
 

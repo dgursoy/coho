@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Callable
 from ..component.wave import Wave
 
-class Objective(ABC):
+class Cost(ABC):
     """Base class for objective functions."""
 
     def __init__(self, target: np.ndarray, operator: Callable) -> None:
@@ -23,7 +23,7 @@ class Objective(ABC):
         """Compute gradient of objective."""
         pass
 
-class LeastSquares(Objective):
+class LeastSquares(Cost):
     """L2 norm fitting objective."""
 
     def __init__(self, target: np.ndarray, operator: Callable) -> None:

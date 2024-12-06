@@ -2,7 +2,6 @@
 
 # Standard imports
 import numpy as np
-from typing import Tuple
 
 # Local imports
 from coho.core.component import Wave

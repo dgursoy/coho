@@ -7,23 +7,31 @@
 - [Wave Properties](#wave-properties)
 - [Arithmetic Operators](#arithmetic-operators)
 - [Wave Operators](#wave-operators)
-- [Transformations](#transformations)
+- [Device Management](#device-management)
 - [Manipulations](#manipulations)
-- [Coordinates and Extent](#coordinates-and-extent)
-- [Broadcasting](#broadcasting) 
-- [Visualization](#visualization)
+- [Coordinates and Frequencies](#coordinates-and-frequencies)
+- [Broadcasting](#broadcasting)
 
 ## Wave Creation
 
 ```python
-# From a list
-wave = Wave([1, 2, 3], energy=10)
+import torch
+from coho import Wave
+
+# From a tensor
+wave = Wave(torch.ones(128, 128), energy=10)
+
+# From a complex tensor
+wave = Wave(torch.ones(128, 128) * torch.exp(1j * torch.pi), energy=10)
 
 # From an image
 wave = Wave.from_image('path/to/image.png')
 
-# From a numpy array
-wave = Wave(np.random.rand(128, 128) * np.exp(1j * np.random.rand(128, 128)))
+# With device specification
+wave = Wave(torch.ones(128, 128), energy=10, device='cuda')
+
+# With position and spacing
+wave = Wave(torch.ones(128, 128), energy=10, position=0.5, spacing=1e-6)
 
 # From a callable function
 wave = Wave(gaussian)
@@ -34,11 +42,11 @@ wave = Wave(Wave(existing_wave))
 
 ## Wave Attributes
 
-- `form`: array (batch, ny, nx)
-- `energy`: float 
-- `spacing`: float
-- `position`: float (batch,) (broadcastable to form)
-- `shift`: tuple of ints (batch, 2) (broadcastable to form)
+- `form`: torch.Tensor (batch, ny, nx) - complex128
+- `energy`: float - beam energy in keV
+- `spacing`: float - pixel size in meters
+- `position`: torch.Tensor - z position in meters
+- `x`, `y`: torch.Tensor - lateral positions in meters
 
 ## Wave Properties
 
@@ -66,27 +74,35 @@ ndim = wave.ndim
 ## Arithmetic Operators
 
 ```python
-# Addition and subtraction
+# Basic operations
 wave = wave1 + wave2
 wave = wave1 - wave2
-
-# Multiplication and division
 wave = wave1 * wave2
+wave = wave1 / wave2
+
+# Scalar operations
+wave = wave1 * 2
 wave = wave1 / 2
 
-# In-place modifications
-wave1 += wave2
-wave1 *= 2
+# In-place operations
+wave += wave1
+wave -= wave1
+wave *= wave1
+wave /= wave1
+wave += 2
+wave -= 2
+wave *= 2
+wave /= 2
 ```
 
 ## Wave Operators
 
 ```python
+# Complex operations
+wave = wave.conjugate()
+
 # Power
 wave = wave1 ** 2
-
-# Conjugate
-wave = wave.conjugate()
 
 # Absolute value
 wave = wave.abs() 
@@ -94,47 +110,47 @@ wave = wave.abs()
 # Overlap integral
 overlap = wave1.overlap(wave2)
 
-# Normalize
+# Amplitude normalization
 wave = wave.normalize()
+
+# Copying
+wave_copy = wave.copy()
+zero = wave.zeros_like()
+ones = wave.ones_like()
 ```
 
-## Transformations
+## Device Management
 
 ```python
-# Fourier transform 
-wave = wave.fft()
+# Move to GPU
+wave_gpu = wave.to('cuda')
 
-# Inverse Fourier transform
-wave = wave.ifft()
+# Move to CPU
+wave_cpu = wave.to('cpu')
+
+# Check device
+device = wave.form.device
 ```
 
 ## Manipulations
 
 ```python
-# Shifting in space
+# Spatial operations
 wave = wave.shift((10, 15))
-
-# Rotating
-wave = wave.rotate(45)
-
-# Cropping
 wave = wave.crop((slice(10, 50), slice(20, 60)))
-
-# Padding
 wave = wave.pad((10, 10), mode='constant', constant_values=0)
 ```
 
-## Coordinates and Extent
+## Coordinates and Frequencies
 
 ```python
 # Get frequency coordinates
-fy, fx = wave.freqs
-
-# Get physical extent
-extent = wave.extent
+fy, fx = wave.freqs 
+freq2 = wave.freq2 
 
 # Get physical coordinates
-y, x = wave.coords
+y, x = wave.coords # Real space coordinates
+extent = wave.extent# (ymin, ymax, xmin, xmax)
 ```
 
 ## Broadcasting
@@ -149,15 +165,3 @@ print(wave.form.shape)  # Output: (5, 128, 128)
 print(wave.position.shape)  # Output: (5,)
 ```
 
-## Visualization
-
-```python
-# Plot amplitude
-wave.plot(batch=0, kind='amplitude')
-
-# Plot phase
-wave.plot(batch=0, kind='phase')
-
-# Plot intensity
-wave.plot(batch=0, kind='intensity')
-```

@@ -1,48 +1,152 @@
 # Operators
 
-## Contents
+Operators enable modular wave transformations, interactions, and optimizations. They are categorized into **Simple**, **Composite**, and **Optimization-enhanced** operators.
 
-- [Propagation](#propagation)
-- [Interactions](#interactions)
-- [Manipulations](#manipulations)
-- [Broadcasting](#broadcasting)
+- [Simple Operators](#simple-operators)
+- [Composite Operators](#composite-operators)
+- [Operators for Optimization](#operators-for-optimization)
 
-## Propagation
+## Simple Operators
+
+Simple operators perform individual wave transformations:
 
 ```python
 # Propagate wave by distance
-propagate = Propagate()
-wave = propagate.apply(wave, distance)
-```
+wave = Propagate().apply(wave, distance) 
 
-## Interactions
-
-```python
 # Modulate wave by another wave
-modulate = Modulate()
-wave = modulate.apply(wave1, wave2)
+wave = Modulate().apply(wave1, wave2)
 
-# Detect wave
-detect = Detect()
-wave = detect.apply(wave)
+# Detect wave intensity
+wave = Detect().apply(wave)
+
+# Shift wave by a shift value
+wave = Shift().apply(wave, shift)
+
+# Crop wave to match another wave
+wave = Crop().apply(wave1, wave2)
+
+# Broadcast wave to multiple values
+wave = Broadcast().apply(wave, values)
 ```
 
-## Manipulations
+## Composite Operators
+
+Composite operators allow composing multiple operators together to form a new operator. 
+
+**Example:** Compose `detect(propagate(modulate(propagate(wave1, distance1), wave2), distance2))` from `propagate`, `modulate`, and `detect` operators.
 
 ```python
-# Shift wave
-shift = Shift()
-wave = shift.apply(wave, shift)
+from operators import CompositeOperator, Modulate, Propagate, Detect
 
-# Crop wave
-crop = Crop()
-wave = crop.apply(wave, crop)
+# Create the composite operator
+composite_operator = CompositeOperator(
+    Detect(),  # Outer detect
+    Propagate(),  # Second propagate
+    Modulate(),  # Modulate
+    Propagate()  # First propagate
+)
+
+# Inputs to the composite operator
+wave1 = ...
+distance1 = ...
+wave2 = ...
+distance2 = ...
+
+# Apply the composite operator
+result = composite_operator.forward(wave1, distance1, wave2, distance2)
 ```
 
-## Broadcasting
+The following alternative creation of `composite_operator` is equivalent:
 
 ```python
-# Broadcast wave
-broadcast = Broadcast()
-wave = broadcast.apply(wave, values)
+# Alternative creation of composite_operator
+composite_operator = CompositeOperator(
+    Detect(), 
+    CompositeOperator(
+        Propagate(), 
+        CompositeOperator(
+            Modulate(), 
+            Propagate()
+        )
+    )
+)
 ```
+
+## Operators for Optimization
+
+Efficient optimization workflows often involve repeated operator calls with a mix of fixed and dynamic inputs. Leveraging caching and parameter freezing can enhance performance, clarity, and robustness.
+
+
+### Caching Operator Outputs
+
+Caching eliminates redundant operations by reusing results from previous computations with identical inputs, making it particularly useful in optimization loops and nested workflows.
+
+**Example:** Cache the propagated wave with `distance` using the `propagate` operator.
+
+```python
+from operators import CachedOperator, Propagate
+
+# Create a cached propagate operator
+cached_propagate = CachedOperator(Propagate())
+
+# Compute and cache the result
+result1 = cached_propagate.forward(wave1, distance1)  # Computes and caches
+result2 = cached_propagate.forward(wave1, distance1)  # Reuses cache
+
+# Clear cache when inputs change
+cached_propagate.clear_cache()
+
+# Apply the cached operator again with cleared cache
+result3 = cached_propagate.forward(wave1, distance1)  # Recomputes and caches new result
+```
+
+### Parameter Freezing
+
+Freezing marks specific parameters as immutable, simplifying input handling and improving consistency. Combined with caching, it eliminates the need for runtime input checks for cached operators.
+
+**Example:** Freeze `distance` in `propagate(wave, distance)`.
+
+```python
+from operators import FrozenParameter, Propagate
+
+# Create a frozen parameter
+distance = FrozenParameter()
+
+# Freeze input parameters
+wave = ...
+distance.freeze(...)
+
+# Apply the propagation
+propagate = Propagate()
+wave_prop = propagate.forward(wave, distance) 
+
+# Unfreeze distance
+distance.unfreeze()
+
+# New dynamic value for distance
+distance = ... 
+```
+
+### Freezing with Caching
+
+When combined with `CachedOperator`, freezing optimizes caching further by ensuring consistent inputs:
+
+```python
+from operators import CachedOperator, Propagate, FrozenParameter
+
+# Create a cached propagate operator
+cached_propagate = CachedOperator(Propagate())
+
+# Create a frozen distance parameter
+distance = FrozenParameter()
+
+# Freeze distance
+frozen_distance = distance.freeze(...)
+
+# Apply the cached operator with frozen inputs
+result1 = cached_propagate.forward(wave, frozen_distance)  # Cache created
+result2 = cached_propagate.forward(wave, frozen_distance)  # Cache reused
+```
+
+

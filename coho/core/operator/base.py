@@ -1,8 +1,13 @@
 # Standard imports
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Union, List, TypeAlias, Dict
+import torch
 
-__all__ = ['Operator']
+# Type aliases
+TensorLike: TypeAlias = Union[float, List[float], torch.Tensor]
+TensorDict: TypeAlias = Dict[str, TensorLike]
+
+__all__ = ['Operator', 'TensorLike', 'TensorDict']
 
 class Operator(ABC):
     """Base class for operators."""
@@ -16,3 +21,4 @@ class Operator(ABC):
     def adjoint(self, *args, **kwargs) -> Any:
         """Adjoint operator."""
         pass
+

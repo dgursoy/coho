@@ -1,26 +1,23 @@
-"""Classes for simulating wavefront scanning."""
+"""Broadcast wave across multiple parameter values."""
 
 # Standard imports
-from typing import Union, List, Dict
-import numpy as np
+import torch
 
 # Local imports
-from .base import Operator
-from .decorators import validate_form
+from .base import Operator, TensorDict
 from ..component import Wave
 
 class Broadcast(Operator):
     """Broadcast wave across multiple parameter values."""
     
-    def _prepare_values(self, values: Dict[str, Union[List[float], np.ndarray]]) -> Dict[str, np.ndarray]:
-        """Convert parameter values to float arrays."""
+    def _prepare_values(self, values: TensorDict) -> TensorDict:
+        """Convert parameter values to float tensors."""
         return {
-            name: np.asarray(vals, dtype=float)
+            name: torch.as_tensor(vals, dtype=torch.float64)
             for name, vals in values.items()
         }
     
-    @validate_form
-    def apply(self, wave: Wave, values: Dict[str, Union[List[float], np.ndarray]]) -> Wave:
+    def apply(self, wave: Wave, values: TensorDict) -> Wave:
         """Forward broadcast.
         
         Args:
@@ -38,24 +35,24 @@ class Broadcast(Operator):
         if wave.form.ndim > 2:
             wave.form = wave.form.reshape(-1, *wave.form.shape[-2:])
         else:
-            wave.form = wave.form[np.newaxis, ...]
+            wave.form = wave.form.unsqueeze(0)
         
         # Broadcast to correct number of values
-        wave.form = np.broadcast_to(wave.form, (n_values, *wave.form.shape[-2:]))
+        wave.form = wave.form.expand(n_values, *wave.form.shape[-2:])
         
         # Set all parameter values
         for name, vals in values.items():
-            setattr(wave, name, vals)
+            setattr(wave, name, vals.to(wave.form.device))
             
         return wave
-       
-    def adjoint(self, wave: Wave, values: Dict[str, Union[List[float], np.ndarray]]) -> Wave:
+    
+    def adjoint(self, wave: Wave, values: TensorDict) -> Wave:
         """Adjoint broadcast."""
         values = self._prepare_values(values)
-        wave.form = np.mean(wave.form, axis=0)
+        wave.form = torch.mean(wave.form, dim=0)
         
         # Set first value for each parameter
         for name, vals in values.items():
-            setattr(wave, name, vals[0])
+            setattr(wave, name, vals[0].to(wave.form.device))
             
         return wave

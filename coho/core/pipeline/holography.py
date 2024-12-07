@@ -1,12 +1,12 @@
 """Holographic scan experiment."""
 
 # Standard imports
-from typing import Union, List, Tuple, Dict
-import numpy as np
+from typing import Union, List
+import torch
 
 # Local imports
 from .base import Pipeline
-from ..operator import Broadcast, Propagate, Modulate, Detect, Shift, Crop, Operator
+from ..operator import Broadcast, Propagate, Modulate, Detect, Shift, Crop
 from ..component import Wave
 
 class MultiDistanceHolography(Pipeline):
@@ -15,17 +15,17 @@ class MultiDistanceHolography(Pipeline):
     def __init__(self, 
                  reference: Wave, 
                  detector: Wave, 
-                 sample_positions: Union[np.ndarray, float, List[float]]
+                 sample_positions: Union[torch.Tensor, float, List[float]]
         ):
         """Initialize with reference and detector waves."""
-        self.sample_positions = np.atleast_1d(sample_positions)
+        self.sample_positions = torch.as_tensor(sample_positions, dtype=torch.float64)
         
         # Prepare waves
         self.reference = self._prepare_reference(reference)
         self.detector = self._prepare_detector(detector)
         
         # Calculate distances
-        self.sample_to_detector = np.subtract(detector.position, self.sample_positions)
+        self.sample_to_detector = detector.position - self.sample_positions
         
         # Initialize pipeline
         super().__init__([
@@ -38,24 +38,24 @@ class MultiDistanceHolography(Pipeline):
     
     def _prepare_reference(self, reference: Wave) -> Wave:
         """Prepare reference wave by broadcasting and propagating."""
-        wave_positions = np.full_like(self.sample_positions, reference.position)
+        wave_positions = torch.full_like(self.sample_positions, reference.position)
         wave = Broadcast().apply(reference, {'position': wave_positions})
-        distances = np.subtract(self.sample_positions, wave_positions)
+        distances = self.sample_positions - wave_positions
         return Propagate().apply(wave, distances)
     
     def _prepare_detector(self, detector: Wave) -> Wave:
         """Prepare detector wave by broadcasting and propagating."""
-        detector_positions = np.full_like(self.sample_positions, detector.position)
+        detector_positions = torch.full_like(self.sample_positions, detector.position)
         return Broadcast().apply(detector, {'position': detector_positions})
     
-    def apply(self, sample: Wave) -> np.ndarray:
+    def apply(self, sample: Wave) -> torch.Tensor:
         """Forward pipeline: sample to intensity."""
         return super().apply(sample)
     
-    def adjoint(self, intensity: np.ndarray) -> Wave:
+    def adjoint(self, intensity: torch.Tensor) -> Wave:
         """Adjoint pipeline: intensity to sample."""
         return super().adjoint(intensity)
-    
+
 class CodedHolography(Pipeline):
     """Coded holography pipeline."""
     
@@ -64,25 +64,25 @@ class CodedHolography(Pipeline):
                  detector: Wave, 
                  sample: Wave,
                  code: Wave,
-                 code_position_x: Union[np.ndarray, float, List[float]],
-                 code_position_y: Union[np.ndarray, float, List[float]]
+                 code_position_x: Union[torch.Tensor, float, List[float]],
+                 code_position_y: Union[torch.Tensor, float, List[float]]
         ):
         """Initialize with reference and detector waves."""
-        self.code_position_x = np.atleast_1d(code_position_x)
-        self.code_position_y = np.atleast_1d(code_position_y)
+        self.code_position_x = torch.as_tensor(code_position_x, dtype=torch.float64)
+        self.code_position_y = torch.as_tensor(code_position_y, dtype=torch.float64)
         self.code = code
         
         # Prepare reference wave
         wave = Broadcast().apply(reference, 
-                                 values={'x': self.code_position_x, 
-                                         'y': self.code_position_y})
+                               values={'x': self.code_position_x, 
+                                     'y': self.code_position_y})
         distance = self.code.position - wave.position
         prepared_reference = Propagate().apply(wave, distance=distance)
 
         # Prepare code wave
         prepared_code = Broadcast().apply(code, 
-                                          values={'x': self.code_position_x, 
-                                                  'y': self.code_position_y})
+                                        values={'x': self.code_position_x, 
+                                              'y': self.code_position_y})
         
         prepared_code = Shift().apply(prepared_code, self.code_position_y, self.code_position_x)
         prepared_code = Crop().apply(prepared_reference, prepared_code)
@@ -92,8 +92,8 @@ class CodedHolography(Pipeline):
         
         # Prepare detector wave
         prepared_detector = Broadcast().apply(detector, 
-                                              values={'x': self.code_position_x, 
-                                                      'y': self.code_position_y})
+                                            values={'x': self.code_position_x, 
+                                                  'y': self.code_position_y})
 
         # Calculate propagation distances
         sample_to_detector = detector.position - prepared_reference.position
@@ -107,10 +107,10 @@ class CodedHolography(Pipeline):
             (Detect(), {})
         ])
     
-    def apply(self, sample: Wave) -> np.ndarray:
+    def apply(self, sample: Wave) -> torch.Tensor:
         """Forward pipeline: sample to intensity."""
         return super().apply(sample)
     
-    def adjoint(self, intensity: np.ndarray) -> Wave:
+    def adjoint(self, intensity: torch.Tensor) -> Wave:
         """Adjoint pipeline: intensity to sample."""
         return super().adjoint(intensity)

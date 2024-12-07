@@ -1,6 +1,6 @@
 """Objective functions for optimization."""
 
-import numpy as np
+import torch
 from abc import ABC, abstractmethod
 from typing import Callable
 from ..component.wave import Wave
@@ -8,7 +8,7 @@ from ..component.wave import Wave
 class Cost(ABC):
     """Base class for objective functions."""
 
-    def __init__(self, target: np.ndarray, operator: Callable) -> None:
+    def __init__(self, target: torch.Tensor, operator: Callable) -> None:
         """Initialize objective."""
         self.target = target
         self.operator = operator
@@ -26,7 +26,7 @@ class Cost(ABC):
 class LeastSquares(Cost):
     """L2 norm fitting objective."""
 
-    def __init__(self, target: np.ndarray, operator: Callable) -> None:
+    def __init__(self, target: torch.Tensor, operator: Callable) -> None:
         """Initialize objective."""
         super().__init__(target, operator)
         self.cost_history = []
@@ -34,9 +34,9 @@ class LeastSquares(Cost):
     def evaluate(self, estimate: Wave) -> float:
         """Compute L2 norm difference."""
         residual = self.operator.apply(estimate) - self.target
-        cost = np.sum(residual ** 2)
+        cost = torch.sum(residual ** 2)
         self.cost_history.append(float(cost))
-        return cost
+        return float(cost)
     
     def gradient(self, estimate: Wave) -> Wave:
         """Compute gradient of L2 norm difference."""

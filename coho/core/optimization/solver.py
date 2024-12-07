@@ -2,7 +2,6 @@
 
 # Standard imports
 from abc import ABC, abstractmethod
-import numpy as np
 
 # Local imports
 from .cost import Cost
@@ -11,14 +10,14 @@ from ..component.wave import Wave
 class Solver(ABC):
     """Base class for all solvers."""
     
-    def __init__(self, step_size: float, iterations: int, initial_guess: np.ndarray) -> None:
+    def __init__(self, step_size: float, iterations: int, initial_guess: Wave) -> None:
         """Initialize solver."""
         self.step_size = step_size
         self.iterations = iterations
         self.initial_guess = initial_guess
     
     @abstractmethod
-    def solve(self) -> np.ndarray:
+    def solve(self) -> Wave:
         """Solve the problem."""
         pass
 
@@ -37,7 +36,7 @@ class IterativeSolver(Solver):
         """Initialize solver."""
         self.current = self.initial_guess
     
-    def solve(self) -> np.ndarray:
+    def solve(self) -> Wave:
         """Run iterations until convergence or max iterations."""
         
         for i in range(self.iterations):
@@ -50,15 +49,14 @@ class IterativeSolver(Solver):
         return self.current
     
     @abstractmethod
-    def update(self) -> np.ndarray:
+    def update(self) -> Wave:
         """Perform one iteration update."""
         pass
-
 
 class GradientDescent(IterativeSolver):
     """Gradient descent solver."""
     
-    def update(self) -> np.ndarray:
+    def update(self) -> Wave:
         """Perform gradient descent update."""
         return -self.step_size * self.cost.gradient(self.current)
     

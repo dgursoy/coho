@@ -1,5 +1,11 @@
+"""Wave class."""
+
+# Standard imports
 from typing import Union, Tuple, List
 import torch
+
+# Local imports
+from ..utils.decorators import as_tensor
 
 class Wave:
     """A class representing a complex wave field using PyTorch tensors."""

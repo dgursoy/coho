@@ -12,8 +12,7 @@ __all__ = [
     'Broadcast',
     'GradientDescent',
     'LeastSquares',
-    'Pipeline',
     'Operator',
     'MultiDistanceHolography',
-    'CodedHolography'
+    'CodedHolography',
     ]

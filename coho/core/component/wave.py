@@ -1,46 +1,88 @@
 """Wave class."""
 
 # Standard imports
-from typing import Union, Tuple, List
+from typing import Union, Tuple, Optional, List, Any
 import torch
 
-# Local imports
-from ..utils.decorators import as_tensor
 
 class Wave:
     """A class representing a complex wave field using PyTorch tensors."""
     
     def __init__(self,
                  form: torch.Tensor, 
-                 energy: float = None, 
-                 spacing: float = None, 
+                 energy: Optional[float] = None, 
+                 spacing: Optional[float] = None, 
                  position: Union[float, torch.Tensor] = 0.0,
                  x: Union[float, torch.Tensor] = 0.0,
                  y: Union[float, torch.Tensor] = 0.0,
-                 device: Union[str, torch.device] = 'cpu'):
+                 device: Optional[Union[str, torch.device]] = 'cpu'
+        ):
         """Initialize a wave."""
-        # Convert device string to torch.device if needed
+        # Add batch dimension if needed
+        if form.ndim == 2:
+            form = form.unsqueeze(0)
+        elif form.ndim != 3:
+            raise ValueError(f"Form must be 2D or 3D tensor, got shape {form.shape}")
+        
+        # Store form
+        self.form = form
+        
+        # Store basic attributes
+        self.energy = self._to_tensor(energy)
+        self.spacing = self._to_tensor(spacing)
+        
+        # Convert position attributes to tensors
+        self.position = self._to_tensor(position)
+        self.x = self._to_tensor(x)
+        self.y = self._to_tensor(y)
+        
+        # Move everything to specified device
+        self.to(device)
+
+    def to(self, device: Union[str, torch.device]) -> 'Wave':
+        """Move wave to specified device and ensure complex dtype."""
         if isinstance(device, str):
             device = torch.device(device)
-            
-        # Ensure complex tensor
-        if not form.is_complex():
-            form = form.to(torch.complex128)
-            
-        # Move to specified device
-        if device is not None:
-            form = form.to(device)
         
-        # Add batch dimension if needed
-        self.form = form.unsqueeze(0) if form.dim() == 2 else form
+        # Move form to device and ensure complex
+        self.form = self.form.to(device=device)
+        if not self.form.is_complex():
+            self.form = self.form.to(dtype=torch.complex128)
+        
+        # Move position attributes to device
+        for attr in ['position', 'x', 'y']:
+            if hasattr(self, attr):
+                setattr(self, attr, getattr(self, attr).to(device=device))
+        return self
 
-        # Store attributes
-        self.energy = energy
-        self.spacing = spacing
-        self.position = torch.as_tensor(position, dtype=torch.float64, device=form.device)
-        self.x = torch.as_tensor(x, dtype=torch.float64, device=form.device)
-        self.y = torch.as_tensor(y, dtype=torch.float64, device=form.device)
-        self._freq2 = None # Cache for squared frequencies
+    def _to_tensor(self, value: Union[float, torch.Tensor]) -> torch.Tensor:
+        """Convert value to 1D tensor."""
+        if not isinstance(value, torch.Tensor):
+            value = torch.tensor(value, dtype=torch.float64)
+        if value.ndim == 0:
+            value = value.reshape(1)
+        return value
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Monitor dimension changes to form and adjust positions accordingly."""
+        if name == 'form' and value is not None:
+            old_size = getattr(self, 'form', None)
+            old_batch_size = old_size.shape[0] if old_size is not None else 1
+            new_batch_size = value.shape[0]
+            
+            super().__setattr__(name, value)
+            
+            # Expand position attributes if batch size increases from 1
+            if new_batch_size > old_batch_size == 1:
+                for attr in ['position', 'x', 'y']:
+                    if hasattr(self, attr):
+                        setattr(self, attr, getattr(self, attr).expand(new_batch_size))
+        else:
+            super().__setattr__(name, value)
+
+    def clear_cache(self):
+        """Clear frequency cache."""
+        self._freq2 = None
 
     @property
     def wavelength(self) -> float:
@@ -314,31 +356,6 @@ class Wave:
         )
         return wave
 
-    def invalidate_cache(self):
-        """Invalidate caches when wave form changes."""
-        self._freq2 = None
-
-    def multiply(self, n: int) -> 'Wave':
-        """Create multiple copies of the wave along first dimension."""
-        # Remove first dimension if it's 1
-        base_form = self.form[0] if self.form.shape[0] == 1 else self.form
-        
-        # Create new form with n copies
-        new_form = torch.stack([base_form] * n)
-        
-        # Handle position
-        if self.position is not None:
-            new_position = torch.full(n, self.position)
-        else:
-            new_position = None
-        
-        return Wave(
-            form=new_form,  # Will be (n, ny, nx)
-            energy=self.energy,
-            spacing=self.spacing,
-            position=new_position
-        )
-
     def crop_to_match(self, reference: 'Wave', pad_value: float = 1.0) -> 'Wave':
         """Crop or pad wave to match reference wave dimensions."""
         if self.spacing != reference.spacing:
@@ -372,17 +389,5 @@ class Wave:
         
         result.crop(slices)
         return result
-
-    def to(self, device: Union[str, torch.device]) -> 'Wave':
-        """Move wave to specified device."""
-        if isinstance(device, str):
-            device = torch.device(device)
-        
-        self.form = self.form.to(device)
-        self.position = self.position.to(device)
-        self.x = self.x.to(device)
-        self.y = self.y.to(device)
-        
-        return self
 
 

@@ -3,8 +3,8 @@
 from .component.wave import Wave
 from .operator.base import Operator
 from .operator.propagate import Propagate
-from .operator.interact import Modulate, Detect, Crop, Shift
-from .operator.scan import Broadcast
+from .operator.interact import Modulate, Detect, Crop, Shift, Move
+from .operator.broadcast import Broadcast, Stack
 from .pipeline import MultiDistanceHolography, CodedHolography
 from .optimization import GradientDescent, LeastSquares
 
@@ -14,8 +14,10 @@ __all__ = [
     'Modulate',
     'Detect',
     'Broadcast',
+    'Stack',
     'Crop',
     'Shift',
+    'Move',
     'Operator',
     'MultiDistanceHolography',
     'CodedHolography',

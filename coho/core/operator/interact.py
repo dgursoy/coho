@@ -8,7 +8,8 @@ from .base import Operator, TensorLike
 from ..component import Wave
 from ..utils.decorators import (
     requires_matching,
-    as_tensor
+    requires_attrs,
+    as_tensor,
 )
 
 __all__ = [
@@ -43,6 +44,23 @@ class Detect(Operator):
         """Intensity to wavefront."""
         self.wave.form = intensity  # No phase information
         return self.wave
+    
+class Move(Operator):
+    """Move wavefront to new position."""
+    
+    @as_tensor('position')
+    @requires_attrs('position')
+    def apply(self, wave: Wave, position: TensorLike) -> Wave:
+        """Move wave to new position."""
+        wave.position = position
+        return wave
+    
+    @as_tensor('position')
+    @requires_attrs('position')
+    def adjoint(self, wave: Wave, position: TensorLike) -> Wave:
+        """Adjoint move operation."""
+        wave.position = -position
+        return wave
 
 class Shift(Operator):
     """Shift operator."""

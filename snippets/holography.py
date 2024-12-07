@@ -25,7 +25,7 @@ print(repr(sample))
 print(repr(detector))
 print(repr(sample_positions))
 
-# Create and run pipeline
+# Initialize pipeline
 pipeline = MultiDistanceHolography(reference, detector, sample_positions)
 
 # Forward pipeline

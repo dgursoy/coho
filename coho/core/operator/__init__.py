@@ -2,8 +2,8 @@
 
 # Local imports
 from .propagate import Propagate
-from .interact import Modulate, Detect, Crop, Shift
-from .scan import Broadcast
+from .interact import Modulate, Detect, Crop, Shift, Move
+from .broadcast import Broadcast, Stack
 from .base import Operator
 
 __all__ = [
@@ -14,4 +14,6 @@ __all__ = [
     'Broadcast',
     'Crop',
     'Shift',
+    'Stack',
+    'Move',
 ]

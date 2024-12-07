@@ -6,6 +6,10 @@ import torch
 # Local imports
 from .base import Operator, TensorDict
 from ..component import Wave
+from ..utils.decorators import (
+    requires_unstacked,
+    requires_stacked
+)
 
 class Broadcast(Operator):
     """Broadcast wave across multiple parameter values."""
@@ -43,7 +47,6 @@ class Broadcast(Operator):
         # Set all parameter values
         for name, vals in values.items():
             setattr(wave, name, vals.to(wave.form.device))
-            
         return wave
     
     def adjoint(self, wave: Wave, values: TensorDict) -> Wave:
@@ -54,5 +57,19 @@ class Broadcast(Operator):
         # Set first value for each parameter
         for name, vals in values.items():
             setattr(wave, name, vals[0].to(wave.form.device))
-            
+        return wave
+
+class Stack(Operator):
+    """Stacks a wave along stack (first) dimension in-place."""
+    
+    @requires_unstacked
+    def apply(self, wave: Wave, stack_size: int) -> Wave:
+        """Stack n copies of wave along stack dimension in-place."""
+        wave.form = wave.form.expand(stack_size, *wave.form.shape[-2:])
+        return wave
+    
+    @requires_stacked
+    def adjoint(self, wave: Wave) -> Wave:
+        """Average along stack dimension in-place."""
+        wave.form = wave.form.mean(dim=0, keepdim=True)
         return wave

@@ -1,52 +1,71 @@
 """Holographic scan experiment."""
 
 # Standard imports
-from typing import Union, List
 import torch
 
 # Local imports
-from .base import Pipeline
-from ..operator import Broadcast, Propagate, Modulate, Detect, Shift, Crop
+from .base import Pipeline, CompositeOperator, TensorLike
 from ..component import Wave
+from ..operator import Broadcast, Propagate, Modulate, Detect, Shift, Crop
+
+class MultiDistanceHolographyTest(CompositeOperator):
+    """Multi-distance holography pipeline."""
+    
+    def __init__(self):
+        """Initialize with reference and detector waves."""
+        
+        # Initialize pipeline
+        super().__init__([
+            (Broadcast(), {'values': {'position': self.pos}}),
+            (Modulate(), {'modulator': self.ref}),
+            (Propagate(), {'distance': self.sample_to_det}),
+            (Modulate(), {'modulator': self.det}),
+            (Detect(), {})
+        ])
+    
+    def apply(self, sample: Wave) -> torch.Tensor:
+        """Forward pipeline: sample to intensity."""
+        return super().apply(sample)
+    
+    def adjoint(self, intensity: torch.Tensor) -> Wave:
+        """Adjoint pipeline: intensity to sample."""
+        return super().adjoint(intensity)
 
 class MultiDistanceHolography(Pipeline):
     """Multi-distance holography pipeline."""
     
-    def __init__(self, 
-                 reference: Wave, 
-                 detector: Wave, 
-                 sample_positions: Union[torch.Tensor, float, List[float]]
-        ):
+    def __init__(self, ref: Wave, det: Wave, pos: TensorLike):
         """Initialize with reference and detector waves."""
-        self.sample_positions = torch.as_tensor(sample_positions, dtype=torch.float64)
+        # Sample positions
+        self.pos = torch.as_tensor(pos, dtype=torch.float64)
         
         # Prepare waves
-        self.reference = self._prepare_reference(reference)
-        self.detector = self._prepare_detector(detector)
+        self.ref = self._prepare_ref(ref)
+        self.det = self._prepare_det(det)
         
         # Calculate distances
-        self.sample_to_detector = detector.position - self.sample_positions
+        self.sample_to_det = det.position - self.pos
         
         # Initialize pipeline
         super().__init__([
-            (Broadcast(), {'values': {'position': self.sample_positions}}),
-            (Modulate(), {'modulator': self.reference}),
-            (Propagate(), {'distance': self.sample_to_detector}),
-            (Modulate(), {'modulator': self.detector}),
+            (Broadcast(), {'values': {'position': self.pos}}),
+            (Modulate(), {'modulator': self.ref}),
+            (Propagate(), {'distance': self.sample_to_det}),
+            (Modulate(), {'modulator': self.det}),
             (Detect(), {})
         ])
     
-    def _prepare_reference(self, reference: Wave) -> Wave:
-        """Prepare reference wave by broadcasting and propagating."""
-        wave_positions = torch.full_like(self.sample_positions, reference.position)
-        wave = Broadcast().apply(reference, {'position': wave_positions})
-        distances = self.sample_positions - wave_positions
+    def _prepare_ref(self, ref: Wave) -> Wave:
+        """Prepare ref wave by broadcasting and propagating."""
+        wave_positions = torch.full_like(self.pos, ref.position)
+        wave = Broadcast().apply(ref, {'position': wave_positions})
+        distances = self.pos - wave_positions
         return Propagate().apply(wave, distances)
     
-    def _prepare_detector(self, detector: Wave) -> Wave:
-        """Prepare detector wave by broadcasting and propagating."""
-        detector_positions = torch.full_like(self.sample_positions, detector.position)
-        return Broadcast().apply(detector, {'position': detector_positions})
+    def _prepare_det(self, det: Wave) -> Wave:
+        """Prepare det wave by broadcasting and propagating."""
+        det_positions = torch.full_like(self.pos, det.position)
+        return Broadcast().apply(det, {'position': det_positions})
     
     def apply(self, sample: Wave) -> torch.Tensor:
         """Forward pipeline: sample to intensity."""
@@ -64,8 +83,8 @@ class CodedHolography(Pipeline):
                  detector: Wave, 
                  sample: Wave,
                  code: Wave,
-                 code_position_x: Union[torch.Tensor, float, List[float]],
-                 code_position_y: Union[torch.Tensor, float, List[float]]
+                 code_position_x: TensorLike,
+                 code_position_y: TensorLike
         ):
         """Initialize with reference and detector waves."""
         self.code_position_x = torch.as_tensor(code_position_x, dtype=torch.float64)

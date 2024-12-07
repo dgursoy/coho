@@ -1,7 +1,7 @@
 """Common decorators for the coho package."""
 
 from functools import wraps
-from typing import Callable, Any, TYPE_CHECKING, Union
+from typing import Callable, Any, TYPE_CHECKING
 import torch
 
 if TYPE_CHECKING:
@@ -12,17 +12,21 @@ def as_tensor(*parameter_names: str, dtype: torch.dtype = torch.float64) -> Call
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(self, *args, **kwargs) -> Any:
-            # Get device from form attribute or fallback to cpu
-            device = 'cpu'
-            if hasattr(self, 'form'):
-                device = self.form.device
-                
-            # Convert each named parameter in kwargs
+            # Get device from first arg (wave) or fallback to cpu
+            device = getattr(args[0], 'device', 'cpu') if args else 'cpu'
+            
+            # Convert positional args after the first one (wave)
+            new_args = list(args)
+            for i, (param_name, arg) in enumerate(zip(parameter_names, args[1:]), 1):
+                if not isinstance(arg, torch.Tensor):
+                    new_args[i] = torch.as_tensor(arg, dtype=dtype, device=device)
+            
+            # Convert kwargs
             for param_name in parameter_names:
                 if param_name in kwargs and not isinstance(kwargs[param_name], torch.Tensor):
                     kwargs[param_name] = torch.as_tensor(kwargs[param_name], dtype=dtype, device=device)
             
-            return func(self, *args, **kwargs)
+            return func(self, *new_args, **kwargs)
         return wrapper
     return decorator
 
@@ -69,3 +73,21 @@ def requires_matching(*attributes: str) -> Callable:
             return func(self, reference, modulator, *args, **kwargs)
         return wrapper
     return decorator
+
+def requires_unstacked(func):
+    """Ensure wave has stack dimension of 1."""
+    @wraps(func)
+    def wrapper(self, wave: 'Wave', *args, **kwargs):
+        if wave.form.shape[0] != 1:
+            raise ValueError(f"Wave must be unstacked (got stack size {wave.form.shape[0]})")
+        return func(self, wave, *args, **kwargs)
+    return wrapper
+
+def requires_stacked(func):
+    """Ensure wave has stack dimension larger than 1."""
+    @wraps(func)
+    def wrapper(self, wave: 'Wave', *args, **kwargs):
+        if wave.form.shape[0] <= 1:
+            raise ValueError(f"Wave must be stacked (got stack size {wave.form.shape[0]})")
+        return func(self, wave, *args, **kwargs)
+    return wrapper

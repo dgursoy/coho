@@ -1,28 +1,17 @@
-# core/operator/__init__.py
+"""Operators for wave propagation and interaction."""
 
-"""Core operator components for wave propagation.
-
-This module provides base classes for forward and adjoint operators
-used in both simulation and optimization.
-
-Components:
-    Propagator: Field propagation methods
-        fresnel: Near-field diffraction
-        fraunhofer: Far-field diffraction
-
-    Interactor: Wave-object interactions
-        thin_object: Simple transmission functions
-        thick_object: Multi-slice beam propagation
-"""
-
-from .propagator import *
-from .interactor import *
-from .forward import *
+# Local imports
+from .propagate import Propagate
+from .interact import Modulate, Detect, Crop, Shift
+from .scan import Broadcast
+from .base import Operator
 
 __all__ = [
-    'FresnelPropagator',
-    'FraunhoferPropagator',
-    'ThinObjectInteractor',
-    'ThickObjectInteractor',
-    'Holography',
+    'Propagate',
+    'Modulate',
+    'Detect',
+    'Operator',
+    'Broadcast',
+    'Crop',
+    'Shift',
 ]

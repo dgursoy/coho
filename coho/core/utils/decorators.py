@@ -1,11 +1,29 @@
 """Common decorators for the coho package."""
 
+# Standard imports
 from functools import wraps
 from typing import Callable, Any, TYPE_CHECKING
 import torch
 
+# Local imports
 if TYPE_CHECKING:
-    from ..component import Wave
+    from ..wave import Wave
+
+def requires_cached_tensors(func):
+    """Ensure cached tensors are available before executing function."""
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        # Graph cache check
+        if hasattr(self, 'cache'):
+            if not self.cache:
+                raise RuntimeError(f"Empty cache in {self.__class__.__name__}")
+            return func(self, *args, **kwargs)
+            
+        # Operator args check
+        if not args and not kwargs:
+            raise RuntimeError(f"No tensors provided to {self.__class__.__name__}.{func.__name__}")
+        return func(self, *args, **kwargs)
+    return wrapper
 
 def as_tensor(*parameter_names: str, dtype: torch.dtype = torch.float64) -> Callable:
     """Convert specified parameters to torch tensors if they aren't already."""

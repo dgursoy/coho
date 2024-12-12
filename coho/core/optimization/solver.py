@@ -56,7 +56,24 @@ class IterativeSolver(Solver):
 class GradientDescent(IterativeSolver):
     """Gradient descent solver."""
     
-    def update(self) -> Wave:
+    def update(self) -> list:
         """Perform gradient descent update."""
-        return -self.step_size * self.cost.gradient(self.current)
+        gradients = self.cost.gradient(self.current)
+        # Return list of updates for each variable
+        return [-self.step_size * grad for grad in gradients]
+    
+    def solve(self) -> list:
+        """Run iterations until convergence or max iterations."""
+        for i in range(self.iterations):
+            # Evaluate current cost
+            cost = self.cost.evaluate(self.current)
+            print(f"Iteration {i+1}/{self.iterations}: Cost = {cost}")
+            
+            # Get updates for all variables
+            updates = self.update()
+            
+            # Update each variable
+            self.current = [curr + update for curr, update in zip(self.current, updates)]
+            
+        return self.current
     

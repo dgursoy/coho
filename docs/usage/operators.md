@@ -41,10 +41,14 @@ from operators import CompositeOperator, Modulate, Propagate, Detect
 
 # Create the composite operator
 composite_operator = CompositeOperator(
-    Detect(),  # Outer detect
-    Propagate(),  # Second propagate
-    Modulate(),  # Modulate
-    Propagate()  # First propagate
+    Detect(), 
+    CompositeOperator(
+        Propagate(), 
+        CompositeOperator(
+            Modulate(), 
+            Propagate()
+        )
+    )
 )
 
 # Inputs to the composite operator
@@ -55,22 +59,6 @@ distance2 = ...
 
 # Apply the composite operator
 result = composite_operator.forward(wave1, distance1, wave2, distance2)
-```
-
-The following alternative creation of `composite_operator` is equivalent:
-
-```python
-# Alternative creation of composite_operator
-composite_operator = CompositeOperator(
-    Detect(), 
-    CompositeOperator(
-        Propagate(), 
-        CompositeOperator(
-            Modulate(), 
-            Propagate()
-        )
-    )
-)
 ```
 
 ## Operators for Optimization

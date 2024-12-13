@@ -424,5 +424,17 @@ class Wave:
             x=self.x,
             y=self.y
         )
+    
+    def copy_with_form(self, new_form: torch.Tensor) -> 'Wave':
+        """Create a new wave with given form but same attributes."""
+        return Wave(
+            form=new_form,
+            energy=self.energy,
+            spacing=self.spacing,
+            position=self.position,
+            x=self.x,
+            y=self.y
+        )
+
 
 

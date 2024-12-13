@@ -2,271 +2,275 @@
 
 # Standard imports
 from abc import abstractmethod
-from typing import Union, TypeAlias, Callable, Any, List,  Dict
 import torch
+import torch.nn as nn
+from torch import Tensor
+
 
 # Local imports
 from .wave import Wave
 from .utils.decorators import (
     requires_unstacked,
     requires_matching,
-    requires_attrs,
-    requires_cached_tensors,
-    as_tensor,
 )
 
 __all__ = [
     'Propagate', 
     'Modulate', 
     'Detect',   
-    'Move', 
-    'Shift', 
-    'Crop', 
-    'Stack'
+    'Vectorize'
 ]
 
-# Type aliases
-TensorLike: TypeAlias = Union[float, List[float], torch.Tensor]
-TensorDict: TypeAlias = Dict[str, TensorLike]
 
-class Operator(torch.nn.Module):
-    """Base class for operators.
-    
-    Provides:
-    1. Forward operation through forward()
-    2. Gradient computation through gradient()
-    3. Caching mechanism for expensive computations
-    """
-    
-    def __init__(self):
+class Operator(nn.Module):
+    """Base class for wave operators."""
+    def __init__(self, use_custom_grads=False):
         super().__init__()
-        self._cache = {}  # Cache for expensive computations
+        self.use_custom_grads = use_custom_grads
 
-    @abstractmethod
-    def forward(self, *args, **kwargs) -> Any:
-        """Forward operator application."""
-        pass
-
-    @abstractmethod
-    def gradient(self, grad_output: Any, *args, **kwargs) -> Any:
-        """Gradient computation."""
-        pass
-
-    # Cache management methods
-    def _get_or_compute(self, cache_type: str, key: tuple, function: Callable) -> Any:
-        """Get from cache or compute and cache value."""
-        cached = self._get_cached(cache_type, key)
-        if cached is None:
-            value = function()
-            self._set_cached(cache_type, key, value)
-            return value
-        return cached
-
-    def _get_cached(self, cache_type: str, key: tuple) -> Any:
-        """Get cached value if it exists, None otherwise."""
-        if cache_type not in self._cache:
-            self._cache[cache_type] = {}
-        return self._cache[cache_type].get(key)
-    
-    def _set_cached(self, cache_type: str, key: tuple, value: Any) -> None:
-        """Set value in cache."""
-        if cache_type not in self._cache:
-            self._cache[cache_type] = {}
-        self._cache[cache_type][key] = value
-
-    def clear_cache(self, cache_type: str = None) -> None:
-        """Clear specified cache or all caches."""
-        if cache_type in self._cache:
-            self._cache[cache_type] = {}
+    def forward(self, *args, **kwargs):
+        """Forward pass dispatching to appropriate gradient implementation."""
+        if self.use_custom_grads:
+            return self._with_usergrad(*args)
         else:
-            self._cache = {}
-    
-    def get_cache_info(self) -> dict:
-        """Get information about cache usage."""
-        return {k: len(v) for k, v in self._cache.items()}
+            return self._with_autograd(*args, **kwargs)
+
+    @staticmethod
+    @abstractmethod
+    def _with_usergrad(self):
+        """User-defined gradient implementation."""
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def _with_autograd(*args, **kwargs):
+        """Automatic differentiation implementation."""
+        pass
+
 
 class Propagate(Operator):
-    """Fresnel propagation operator."""
-
-    def _propagate(self, wave: Wave, distance: torch.Tensor) -> Wave:
-        """Core propagation in Fourier domain."""
-        # Get kernel using base class caching
-        kernel = self._get_or_compute(
-            cache_type='kernel',
-            key=(wave.energy, wave.spacing, distance.float().mean()),
-            function=lambda: torch.exp(-1j * wave.wavelength * distance * wave.freq2)
-        )
+    """Propagate wave by distance using Fresnel propagator.
+    
+    Supports both automatic differentiation and custom gradients.
+    Custom gradient implementation uses analytical gradient of Fresnel propagator.
+    """
+    
+    # Core computation shared by both gradient paths
+    @staticmethod
+    def _forward(wave: Wave, distance: Tensor) -> Wave:
+        """Fresnel propagation computation.
         
-        # Propagate using torch FFT
+        Args:
+            wave: Input wave
+            distance: Propagation distance
+        Returns:
+            Wave: Propagated wave
+        """
+        distance = distance[..., None, None]
+        kernel = torch.exp(-1j * wave.wavelength * distance * wave.freq2)
         wave.form = torch.fft.ifft2(
             torch.fft.fft2(wave.form, dim=(-2, -1)) * kernel,
             dim=(-2, -1)
         )
-        
-        # Update position
         wave.position = wave.position + distance.squeeze(-1).squeeze(-1)
-        
         return wave
 
-    @as_tensor('distance')
-    def forward(self, wave: Wave, distance: TensorLike) -> Wave:
-        """Forward Fresnel propagation."""
-        distance = distance.to(dtype=torch.float64)[..., None, None]
-        return self._propagate(wave, distance)
+    # Gradient implementations
+    @staticmethod
+    def _with_usergrad():
+        """Custom gradient using analytical Fresnel propagator gradient."""
+        return _PropagateFunction
 
-    @as_tensor('distance')
-    def gradient(self, grad_output: Wave, distance: TensorLike) -> Wave:
-        """Compute gradient of Fresnel propagation."""
-        distance = distance.to(dtype=torch.float64)[..., None, None]
-        return self._propagate(grad_output, -distance)
+    @staticmethod
+    def _with_autograd(wave: Wave, distance: Tensor) -> Wave:
+        """Automatic differentiation path."""
+        return Propagate._forward(wave, distance)
 
-    def _get_caller(self):
-        """Helper to get caller info."""
-        import inspect
-        frame = inspect.currentframe()
-        caller = frame.f_back.f_back
-        return f"{caller.f_code.co_name} in {caller.f_code.co_filename}:{caller.f_lineno}"
+    # Main interface
+    def forward(self, wave: Wave, distance: Tensor) -> Wave:
+        """Propagate wave by distance.
+        
+        Args:
+            wave: Input wave
+            distance: Propagation distance
+        Returns:
+            Wave: Propagated wave
+        """
+        return super().forward(wave, distance)
+
+
+# Custom gradient implementation
+class _PropagateFunction(torch.autograd.Function):
+    """Custom gradient implementation for Fresnel propagation.
+    
+    Forward: Regular Fresnel propagation
+    Backward: Conjugate Fresnel propagation (negative distance)
+    """
+    
+    @staticmethod
+    def forward(ctx, wave: Wave, distance: Tensor):
+        ctx.save_for_backward(distance)
+        return Propagate._forward(wave, distance)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        distance, = ctx.saved_tensors
+        return Propagate._forward(grad_output, -distance)
+
 
 class Modulate(Operator):
-    """Modulate wavefront by another wavefront."""
+    """Modulate (multiply) two waves.
+    
+    Supports both automatic differentiation and custom gradients.
+    Custom gradient implementation uses product rule for complex multiplication.
+    """
+    
+    # Core computation shared by both gradient paths
+    @staticmethod
+    def _forward(wave1: Wave, wave2: Wave) -> Wave:
+        """Complex multiplication of two waves.
+        
+        Args:
+            wave1: First wave (modified in-place)
+            wave2: Second wave
+        Returns:
+            Wave: Modulated wave (wave1 * wave2)
+        """
+        wave1 *= wave2
+        return wave1
 
+    # Gradient implementations
+    @staticmethod
+    def _with_usergrad():
+        """Custom gradient using product rule."""
+        return _ModulateFunction
+
+    @staticmethod
+    @requires_matching('energy', 'spacing', 'position')
+    def _with_autograd(wave1: Wave, wave2: Wave) -> Wave:
+        """Automatic differentiation path."""
+        return Modulate._forward(wave1, wave2)
+
+    # Main interface
     @requires_matching('energy', 'spacing', 'position')
     def forward(self, wave1: Wave, wave2: Wave) -> Wave:
-        """Forward modulation."""
-        return wave1 * wave2
+        """Modulate two waves.
+        
+        Args:
+            wave1: First wave (modified in-place)
+            wave2: Second wave
+        Returns:
+            Wave: Modulated wave (wave1 * wave2)
+        """
+        return super().forward(wave1, wave2)
 
-    @requires_cached_tensors  # Needs waves from forward pass
-    @requires_matching('energy', 'spacing', 'position')
-    def gradient(self, grad_output: Wave, wave1: Wave, wave2: Wave) -> tuple[Wave, Wave]:
-        """Gradient of modulation."""
-        return grad_output / wave2, grad_output / wave1
+
+# Custom gradient implementation
+class _ModulateFunction(torch.autograd.Function):
+    """Custom gradient implementation for wave modulation.
+    
+    Forward: Complex multiplication
+    Backward: Product rule - d(w1*w2) = dw1*w2 + w1*dw2
+    """
+    
+    @staticmethod
+    def forward(ctx, wave1: Wave, wave2: Wave):
+        ctx.save_for_backward(wave1.form, wave2.form)
+        return Modulate._forward(wave1, wave2)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        wave1_form, wave2_form = ctx.saved_tensors
+        grad1 = grad_output
+        grad2 = grad_output.copy()
+        grad1.form *= wave2_form
+        grad2.form *= wave1_form
+        return grad1, grad2
+
 
 class Detect(Operator):
-    """Detect wavefront amplitude."""
-
-    def forward(self, wave: Wave) -> torch.Tensor:
-        """Wavefront to amplitude."""
-        return wave.amplitude  # |ψ|
+    """Detect wave amplitude.
     
-    def gradient(self, grad_output: torch.Tensor, wave: Wave) -> Wave:
-        """Gradient of amplitude with respect to wave.
+    Supports both automatic differentiation and custom gradients.
+    Custom gradient implementation uses complex derivative of absolute value.
+    """
+    
+    # Core computation shared by both gradient paths
+    @staticmethod
+    def _forward(wave: Wave) -> Tensor:
+        """Compute wave amplitude.
         
-        For complex wave ψ, d|ψ|/dψ = ψ/|ψ|
+        Args:
+            wave: Input wave
+        Returns:
+            Tensor: Wave amplitude |ψ|
         """
-        amplitude = wave.amplitude.clamp(min=1e-10)  
-        grad_wave = wave.copy()
-        grad_wave.form = grad_output * wave.form / amplitude
-        return grad_wave
+        return wave.amplitude
 
-# Plotting
-import matplotlib.pyplot as plt
-def plot_wave_stack(wave, title="Wave", figsize=(20, 8)):
-    """Plot amplitude and phase for each wave in a stack.
+    # Gradient implementations
+    @staticmethod
+    def _with_usergrad():
+        """Custom gradient using d|ψ|/dψ = ψ/|ψ|."""
+        return _DetectFunction
+
+    @staticmethod
+    def _with_autograd(wave: Wave) -> Tensor:
+        """Automatic differentiation path."""
+        return Detect._forward(wave)
+
+    # Main interface
+    def forward(self, wave: Wave) -> Tensor:
+        """Detect wave amplitude.
+        
+        Args:
+            wave: Input wave
+        Returns:
+            Tensor: Wave amplitude |ψ|
+        """
+        return super().forward(wave)
+
+
+# Custom gradient implementation
+class _DetectFunction(torch.autograd.Function):
+    """Custom gradient implementation for amplitude detection.
+    
+    Forward: Compute amplitude |ψ|
+    Backward: Complex derivative d|ψ|/dψ = ψ/|ψ|
+    """
+    
+    @staticmethod
+    def forward(ctx, wave: Wave):
+        ctx.save_for_backward(wave.form)
+        ctx.wave = wave
+        return Detect._forward(wave)
+
+    @staticmethod
+    def backward(ctx, grad_output: Tensor):
+        wave_form, = ctx.saved_tensors
+        amplitude = wave_form.abs().clamp(min=1e-10)
+        grad_wave = ctx.wave.copy()
+        grad_wave.form = grad_output * wave_form / amplitude
+        return grad_wave
+    
+
+@requires_unstacked
+def vectorize(wave: Wave, size: int) -> Wave:
+    """Vectorize wave computation by expanding along first dimension.
+    
+    This function enables parallel processing of identical waves:
+    Instead of sequential processing of n identical waves,
+    we expand to n copies for one parallel computation.
+    
+    Example:
+        wave = Wave(...)
+        vec = vectorize(wave, size=len(distances))  # [n, H, W]
+        results = propagate(vec, distances)  # One vectorized computation
     
     Args:
-        wave: Wave object with stack dimension
-        title: Base title for the plot
-        figsize: Figure size (width, height)
+        wave: Input wave [1, H, W]
+        size: Number of copies for parallel processing
+    Returns:
+        Wave: Expanded wave [size, H, W]
     """
-    plt.figure(figsize=figsize)
-    for m in range(wave.form.shape[0]):
-        # Amplitude
-        plt.subplot(2, 4, m+1)
-        plt.title(f'{title[m]} {m+1} Amplitude')
-        plt.imshow(wave.amplitude[m], cmap='gray')
-        plt.colorbar()
-        
-        # Phase
-        plt.subplot(2, 4, m+5)
-        plt.title(f'{title[m]} {m+1} Phase')
-        plt.imshow(wave.phase[m], cmap='gray')
-        plt.colorbar()
-    plt.tight_layout()
-    plt.show()
-
-class Move(Operator):
-    """Move wavefront to new position.
-    
-    This is a bookkeeping operator that only updates wave position.
-    It doesn't transform the wave or affect gradients directly.
-    Downstream operators (like Propagate) will use this position
-    information in their computations and gradient calculations.
-    """
-    
-    @as_tensor('position')
-    @requires_attrs('position')
-    def forward(self, wave: Wave, position: TensorLike) -> Wave:
-        """Move wave to new position."""
-        wave.position = wave.position + position
-        return wave
-    
-    @as_tensor('position')
-    @requires_attrs('position')
-    def gradient(self, grad_output: Wave, position: TensorLike) -> Wave:
-        """Gradient of move operation."""
-        grad_output.position = grad_output.position - position
-        return grad_output
-
-class Shift(Operator):
-    """Shift operator.
-    
-    Unlike Move which only updates position metadata,
-    Shift actually rolls/shifts the wave form data.
-    """
-
-    @as_tensor('y', 'x')
-    def forward(self, wave: Wave, y: TensorLike, x: TensorLike) -> Wave:
-        """Apply shifts to wave."""
-        # Shift each form in batch
-        shifted_forms = []
-        for form, y, x in zip(wave.form, y, x):
-            shifted = torch.roll(torch.roll(form, int(y), dims=-2), int(x), dims=-1)
-            shifted_forms.append(shifted)
-        wave.form = torch.stack(shifted_forms)
-        return wave
-
-    @as_tensor('y', 'x')
-    def gradient(self, grad_output: Wave, y: TensorLike, x: TensorLike) -> Wave:
-        """Gradient of shift operation.
-        
-        For a circular shift operation, the gradient is just
-        the opposite shift of the upstream gradient.
-        """
-        return self.forward(grad_output, -y, -x)
-
-class Crop(Operator):
-    """Crop wavefront to match dimensions of another wave."""
-
-    def forward(self, wave_original: Wave, wave: Wave) -> Wave:
-        """Crop wave to match dimensions of another wave."""
-        return wave_original.crop_to_match(wave, pad_value=1.0)
-
-    @requires_cached_tensors  # Needs wave from forward pass
-    def gradient(self, grad_output: Wave, wave_original: Wave) -> Wave:
-        """Gradient of crop operation.
-        
-        The gradient needs to be resized back to the original 
-        wave dimensions. Padding areas (where pad_value=1.0 was used)
-        get zero gradient.
-        """
-        return grad_output.crop_to_match(wave_original, pad_value=1.0) 
-    
-class Stack(Operator):
-    """Stacks a wave along stack (first) dimension in-place."""
-    
-    @requires_unstacked
-    def forward(self, wave: Wave, stack_size: int) -> Wave:
-        """Stack n copies of wave along stack dimension in-place."""
-        wave.form = wave.form.expand(stack_size, *wave.form.shape[-2:])
-        return wave
-    
-    def gradient(self, grad_output: Wave, stack_size: int) -> Wave:
-        """Gradient of stack operation.
-        
-        Since forward duplicates the wave n times,
-        gradient needs to average gradients from all copies.
-        """
-        grad_output.form = grad_output.form.mean(dim=0, keepdim=True)
-        return grad_output
-
-
+    wave.form = wave.form.expand(size, *wave.form.shape[-2:])
+    return wave

@@ -64,6 +64,7 @@ nav:
       - Overview: usage/index.md
       - Waves: usage/waves.md
       - Operators: usage/operators.md
+      - Graphs: usage/graphs.md
   - Examples:
       - Overview: examples/index.md
   - Contributing: 

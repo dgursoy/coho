@@ -1,140 +1,44 @@
 # Operators
 
-Operators enable modular wave transformations, interactions, and optimizations. They are categorized into **Simple**, **Composite**, and **Optimization-enhanced** operators.
+An operator transforms waves using two key methods:
 
-- [Simple Operators](#simple-operators)
-- [Composite Operators](#composite-operators)
-- [Operators for Optimization](#operators-for-optimization)
+- `forward`: Performs the wave transformation
+- `backward`: Computes gradients for backpropagation
 
-## Simple Operators
+This follows [PyTorch](https://pytorch.org/)'s convention for implementing differentiable operations.
 
-Simple operators perform individual wave transformations:
+> **Note:** The `Operator` class inherits from [torch.nn.Module](https://pytorch.org/docs/stable/generated/torch.nn.Module.html), following PyTorch's convention for implementing differentiable operations. While we currently use only basic functionality, this inheritance provides future flexibility for integrating with PyTorch's ecosystem.
 
-```python
-# Propagate wave by distance
-wave = Propagate().apply(wave, distance) 
+## Key Features
 
-# Modulate wave by another wave
-wave = Modulate().apply(wave1, wave2)
+- **Base Class Inheritance:** All operators inherit from the `Operator` base class, which inherits from [torch.nn.Module](https://pytorch.org/docs/stable/generated/torch.nn.Module.html).
+- **Core Methods:** All implement `forward` and `gradient` methods for forward transformation and gradient computations.
+- **Reusability:** Operators are stateless, meaning their behavior depends only on the inputs to their forward or backward methods. This ensures they can be reused across different contexts without introducing side effects.
+- **Caching:** Operators can optionally maintain a temporary cache for intermediate results via the `_cache` attribute. This cache is accessed through keys, and is external to the operator's core logic. It is used to store computationally expensive results that may be reused in optimization loops. The based `Operator` class provides methods for managing this cache.
 
-# Detect wave intensity
-wave = Detect().apply(wave)
+## Example
 
-# Shift wave by a shift value
-wave = Shift().apply(wave, shift)
-
-# Crop wave to match another wave
-wave = Crop().apply(wave1, wave2)
-
-# Broadcast wave to multiple values
-wave = Broadcast().apply(wave, values)
-```
-
-## Composite Operators
-
-Composite operators allow composing multiple operators together to form a new operator. 
-
-**Example:** Compose `detect(propagate(modulate(propagate(wave1, distance1), wave2), distance2))` from `propagate`, `modulate`, and `detect` operators.
+Below is an example showing how to use the `Propagate` operator.
 
 ```python
-from operators import CompositeOperator, Modulate, Propagate, Detect
+from coho.core.wave import Wave
+from coho.core.operator import Propagate
 
-# Create the composite operator
-composite_operator = CompositeOperator(
-    Detect(), 
-    CompositeOperator(
-        Propagate(), 
-        CompositeOperator(
-            Modulate(), 
-            Propagate()
-        )
-    )
-)
+# Create a wave
+wave = Wave(torch.rand(128, 128) + 1j * torch.rand(128, 128), energy=10, position=0, spacing=1e-4)
 
-# Inputs to the composite operator
-wave1 = ...
-distance1 = ...
-wave2 = ...
-distance2 = ...
+# Create an instance of the Propagate operator
+propagate = Propagate() 
 
-# Apply the composite operator
-result = composite_operator.forward(wave1, distance1, wave2, distance2)
+# Propagate the wave by 100cm (propagation kernel is computed and cached)
+wave = propagate.forward(wave, distance=100) 
+print(wave.position) # Output: 100.0
+
+# Propagate the wave by 100cm again (propagation kernel is used from the cache)
+wave = propagate.forward(wave, distance=100) 
+print(wave.position) # Output: 200.0
+
+# Backpropagate the wave by 200cm (gradient kernel is computed and cached)
+wave = propagate.gradient(wave, distance=200) 
+print(wave.position) # Output: 0.0
 ```
-
-## Operators for Optimization
-
-Efficient optimization workflows often involve repeated operator calls with a mix of fixed and dynamic inputs. Leveraging caching and parameter freezing can enhance performance, clarity, and robustness.
-
-
-### Caching Operator Outputs
-
-Caching eliminates redundant operations by reusing results from previous computations with identical inputs, making it particularly useful in optimization loops and nested workflows.
-
-**Example:** Cache the propagated wave with `distance` using the `propagate` operator.
-
-```python
-from operators import CachedOperator, Propagate
-
-# Create a cached propagate operator
-cached_propagate = CachedOperator(Propagate())
-
-# Compute and cache the result
-result1 = cached_propagate.forward(wave1, distance1)  # Computes and caches
-result2 = cached_propagate.forward(wave1, distance1)  # Reuses cache
-
-# Clear cache when inputs change
-cached_propagate.clear_cache()
-
-# Apply the cached operator again with cleared cache
-result3 = cached_propagate.forward(wave1, distance1)  # Recomputes and caches new result
-```
-
-### Parameter Freezing
-
-Freezing marks specific parameters as immutable, simplifying input handling and improving consistency. Combined with caching, it eliminates the need for runtime input checks for cached operators.
-
-**Example:** Freeze `distance` in `propagate(wave, distance)`.
-
-```python
-from operators import FrozenParameter, Propagate
-
-# Create a frozen parameter
-distance = FrozenParameter()
-
-# Freeze input parameters
-wave = ...
-distance.freeze(...)
-
-# Apply the propagation
-propagate = Propagate()
-wave_prop = propagate.forward(wave, distance) 
-
-# Unfreeze distance
-distance.unfreeze()
-
-# New dynamic value for distance
-distance = ... 
-```
-
-### Freezing with Caching
-
-When combined with `CachedOperator`, freezing optimizes caching further by ensuring consistent inputs:
-
-```python
-from operators import CachedOperator, Propagate, FrozenParameter
-
-# Create a cached propagate operator
-cached_propagate = CachedOperator(Propagate())
-
-# Create a frozen distance parameter
-distance = FrozenParameter()
-
-# Freeze distance
-frozen_distance = distance.freeze(...)
-
-# Apply the cached operator with frozen inputs
-result1 = cached_propagate.forward(wave, frozen_distance)  # Cache created
-result2 = cached_propagate.forward(wave, frozen_distance)  # Cache reused
-```
-
-

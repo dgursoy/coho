@@ -11,11 +11,11 @@ class Wave:
     
     def __init__(self,
                  form: torch.Tensor, 
-                 energy: Optional[float] = None, 
-                 spacing: Optional[float] = None, 
-                 position: Union[float, torch.Tensor] = 0.0,
-                 x: Union[float, torch.Tensor] = 0.0,
-                 y: Union[float, torch.Tensor] = 0.0,
+                 energy: Optional[Union[float, torch.Tensor]] = None, 
+                 spacing: Optional[Union[float, torch.Tensor]] = None, 
+                 position: Optional[Union[float, torch.Tensor]] = 0.0,
+                 x: Optional[Union[float, torch.Tensor]] = 0.0,
+                 y: Optional[Union[float, torch.Tensor]] = 0.0,
                  device: Optional[Union[str, torch.device]] = 'cpu',
                  requires_grad: bool = False
         ):
@@ -72,8 +72,11 @@ class Wave:
                 setattr(self, attr, getattr(self, attr).to(device=device))
         return self
 
-    def _to_tensor(self, value: Union[float, torch.Tensor]) -> torch.Tensor:
-        """Convert value to 1D tensor."""
+    def _to_tensor(self, value: Union[float, torch.Tensor, None]) -> Optional[torch.Tensor]:
+        """Convert value to 1D tensor or return None if value is None."""
+        if value is None:
+            return None
+            
         if not isinstance(value, torch.Tensor):
             value = torch.tensor(value, dtype=torch.float64)
         if value.ndim == 0:
@@ -410,5 +413,16 @@ class Wave:
         
         result.crop(slices)
         return result
+
+    def repeat(self, *sizes) -> 'Wave':
+        """Repeats wave along specified dimensions."""
+        return Wave(
+            form=self.form.repeat(*sizes),
+            energy=self.energy,
+            spacing=self.spacing,
+            position=self.position,
+            x=self.x,
+            y=self.y
+        )
 
 

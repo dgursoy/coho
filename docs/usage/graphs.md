@@ -53,7 +53,7 @@ inputs = {
 }
 
 result = graph.forward(**inputs)
-print(result['result'])  # Output: 36  ((1 * 2 + 3)^2 = 6^2 = 36)
+print(result['result'])  # Output: 36  ((1 * 2 + 3)^2 = 5^2 = 25)
 ```
 
 ## Gradients and Optimization

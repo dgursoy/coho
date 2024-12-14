@@ -1,16 +1,25 @@
-"""Operator module."""
+"""Operator module for wave manipulation.
+
+This module provides operators for common wave operations:
+- Propagate: Fresnel propagation of waves
+- Modulate: Complex multiplication of waves
+- Detect: Amplitude detection of waves
+
+Each operator supports both automatic differentiation and custom gradients
+through PyTorch's autograd system.
+"""
 
 # Standard imports
-from abc import abstractmethod
 import torch
-import torch.nn as nn
+from torch.nn import Module
 from torch import Tensor
-
+from torch.autograd import Function
+from torch.autograd.function import FunctionCtx
+from typing import Union, Type, Any, Tuple, Optional
 
 # Local imports
 from .wave import Wave
 from .utils.decorators import (
-    requires_unstacked,
     requires_matching,
 )
 
@@ -18,35 +27,38 @@ __all__ = [
     'Propagate', 
     'Modulate', 
     'Detect',   
-    'Vectorize'
 ]
 
+# Base class for all operators
 
-class Operator(nn.Module):
-    """Base class for wave operators."""
-    def __init__(self, use_custom_grads=False):
+class Operator(Module):
+    """Base class for wave operators.
+    
+    Provides common infrastructure for wave operations with optional
+    custom gradient computation.
+    
+    Args:
+        use_custom_grads: Whether to use custom gradient computation
+    """
+    def __init__(self, use_custom_grads: bool = False) -> None:
         super().__init__()
         self.use_custom_grads = use_custom_grads
 
-    def forward(self, *args, **kwargs):
-        """Forward pass dispatching to appropriate gradient implementation."""
+    def forward(self, *args, **kwargs) -> Union[Wave, Tensor]:
+        """Forward pass with optional gradient tracking.
+        
+        Uses either automatic differentiation or custom gradients
+        based on use_custom_grads flag.
+        """
         if self.use_custom_grads:
-            return self._with_usergrad(*args)
-        else:
-            return self._with_autograd(*args, **kwargs)
+            return self._with_custom_grads().apply(*args)
+        return self._forward(*args, **kwargs)
 
-    @staticmethod
-    @abstractmethod
-    def _with_usergrad(self):
-        """User-defined gradient implementation."""
-        pass
 
-    @staticmethod
-    @abstractmethod
-    def _with_autograd(*args, **kwargs):
-        """Automatic differentiation implementation."""
-        pass
-
+# Wave Operators
+# Each operator follows the pattern:
+# 1. Main operator class with common forward computation
+# 2. Custom gradient function class for analytical gradients
 
 class Propagate(Operator):
     """Propagate wave by distance using Fresnel propagator.
@@ -77,30 +89,13 @@ class Propagate(Operator):
 
     # Gradient implementations
     @staticmethod
-    def _with_usergrad():
-        """Custom gradient using analytical Fresnel propagator gradient."""
+    def _with_custom_grads() -> Type[Function]:
+        """Returns custom gradient function class."""
         return _PropagateFunction
-
-    @staticmethod
-    def _with_autograd(wave: Wave, distance: Tensor) -> Wave:
-        """Automatic differentiation path."""
-        return Propagate._forward(wave, distance)
-
-    # Main interface
-    def forward(self, wave: Wave, distance: Tensor) -> Wave:
-        """Propagate wave by distance.
-        
-        Args:
-            wave: Input wave
-            distance: Propagation distance
-        Returns:
-            Wave: Propagated wave
-        """
-        return super().forward(wave, distance)
 
 
 # Custom gradient implementation
-class _PropagateFunction(torch.autograd.Function):
+class _PropagateFunction(Function):
     """Custom gradient implementation for Fresnel propagation.
     
     Forward: Regular Fresnel propagation
@@ -108,14 +103,14 @@ class _PropagateFunction(torch.autograd.Function):
     """
     
     @staticmethod
-    def forward(ctx, wave: Wave, distance: Tensor):
+    def forward(ctx: FunctionCtx, wave: Wave, distance: Tensor) -> Wave:
         ctx.save_for_backward(distance)
         return Propagate._forward(wave, distance)
 
     @staticmethod
-    def backward(ctx, grad_output):
+    def backward(ctx: FunctionCtx, grad_output: Wave) -> Tuple[Wave, Optional[Tensor]]:
         distance, = ctx.saved_tensors
-        return Propagate._forward(grad_output, -distance)
+        return Propagate._forward(grad_output, -distance), None
 
 
 class Modulate(Operator):
@@ -127,6 +122,7 @@ class Modulate(Operator):
     
     # Core computation shared by both gradient paths
     @staticmethod
+    @requires_matching('energy', 'spacing', 'position')
     def _forward(wave1: Wave, wave2: Wave) -> Wave:
         """Complex multiplication of two waves.
         
@@ -136,37 +132,17 @@ class Modulate(Operator):
         Returns:
             Wave: Modulated wave (wave1 * wave2)
         """
-        wave1 *= wave2
-        return wave1
+        return wave1 * wave2
 
     # Gradient implementations
     @staticmethod
-    def _with_usergrad():
-        """Custom gradient using product rule."""
+    def _with_custom_grads() -> Type[Function]:
+        """Returns custom gradient function class."""
         return _ModulateFunction
-
-    @staticmethod
-    @requires_matching('energy', 'spacing', 'position')
-    def _with_autograd(wave1: Wave, wave2: Wave) -> Wave:
-        """Automatic differentiation path."""
-        return Modulate._forward(wave1, wave2)
-
-    # Main interface
-    @requires_matching('energy', 'spacing', 'position')
-    def forward(self, wave1: Wave, wave2: Wave) -> Wave:
-        """Modulate two waves.
-        
-        Args:
-            wave1: First wave (modified in-place)
-            wave2: Second wave
-        Returns:
-            Wave: Modulated wave (wave1 * wave2)
-        """
-        return super().forward(wave1, wave2)
 
 
 # Custom gradient implementation
-class _ModulateFunction(torch.autograd.Function):
+class _ModulateFunction(Function):
     """Custom gradient implementation for wave modulation.
     
     Forward: Complex multiplication
@@ -174,14 +150,14 @@ class _ModulateFunction(torch.autograd.Function):
     """
     
     @staticmethod
-    def forward(ctx, wave1: Wave, wave2: Wave):
+    def forward(ctx: FunctionCtx, wave1: Wave, wave2: Wave) -> Wave:
         ctx.save_for_backward(wave1.form, wave2.form)
         return Modulate._forward(wave1, wave2)
 
     @staticmethod
-    def backward(ctx, grad_output):
+    def backward(ctx: FunctionCtx, grad_output: Wave) -> Tuple[Wave, Wave]:
         wave1_form, wave2_form = ctx.saved_tensors
-        grad1 = grad_output
+        grad1 = grad_output.copy()
         grad2 = grad_output.copy()
         grad1.form *= wave2_form
         grad2.form *= wave1_form
@@ -198,40 +174,18 @@ class Detect(Operator):
     # Core computation shared by both gradient paths
     @staticmethod
     def _forward(wave: Wave) -> Tensor:
-        """Compute wave amplitude.
-        
-        Args:
-            wave: Input wave
-        Returns:
-            Tensor: Wave amplitude |ψ|
-        """
+        """Common forward computation."""
         return wave.amplitude
 
     # Gradient implementations
     @staticmethod
-    def _with_usergrad():
-        """Custom gradient using d|ψ|/dψ = ψ/|ψ|."""
+    def _with_custom_grads() -> Type[Function]:
+        """Returns custom gradient function class."""
         return _DetectFunction
-
-    @staticmethod
-    def _with_autograd(wave: Wave) -> Tensor:
-        """Automatic differentiation path."""
-        return Detect._forward(wave)
-
-    # Main interface
-    def forward(self, wave: Wave) -> Tensor:
-        """Detect wave amplitude.
-        
-        Args:
-            wave: Input wave
-        Returns:
-            Tensor: Wave amplitude |ψ|
-        """
-        return super().forward(wave)
 
 
 # Custom gradient implementation
-class _DetectFunction(torch.autograd.Function):
+class _DetectFunction(Function):
     """Custom gradient implementation for amplitude detection.
     
     Forward: Compute amplitude |ψ|
@@ -239,38 +193,15 @@ class _DetectFunction(torch.autograd.Function):
     """
     
     @staticmethod
-    def forward(ctx, wave: Wave):
+    def forward(ctx: FunctionCtx, wave: Wave) -> Tensor:
         ctx.save_for_backward(wave.form)
         ctx.wave = wave
         return Detect._forward(wave)
 
     @staticmethod
-    def backward(ctx, grad_output: Tensor):
+    def backward(ctx: FunctionCtx, grad_output: Wave) -> Wave:
         wave_form, = ctx.saved_tensors
         amplitude = wave_form.abs().clamp(min=1e-10)
         grad_wave = ctx.wave.copy()
         grad_wave.form = grad_output * wave_form / amplitude
         return grad_wave
-    
-
-@requires_unstacked
-def vectorize(wave: Wave, size: int) -> Wave:
-    """Vectorize wave computation by expanding along first dimension.
-    
-    This function enables parallel processing of identical waves:
-    Instead of sequential processing of n identical waves,
-    we expand to n copies for one parallel computation.
-    
-    Example:
-        wave = Wave(...)
-        vec = vectorize(wave, size=len(distances))  # [n, H, W]
-        results = propagate(vec, distances)  # One vectorized computation
-    
-    Args:
-        wave: Input wave [1, H, W]
-        size: Number of copies for parallel processing
-    Returns:
-        Wave: Expanded wave [size, H, W]
-    """
-    wave.form = wave.form.expand(size, *wave.form.shape[-2:])
-    return wave

@@ -69,18 +69,24 @@ def requires_matching(*attributes: str) -> Callable:
     """Validate that wave attributes match between two waves."""
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        def wrapper(self, reference: 'Wave', modulator: 'Wave', *args, **kwargs) -> Any:
+        def wrapper(*args, **kwargs) -> Any:
+            wave1, wave2 = args[0], args[1]
+            
             for attr in attributes:
-                attr1 = getattr(reference, attr)
-                attr2 = getattr(modulator, attr)
+                attr1 = getattr(wave1, attr)
+                attr2 = getattr(wave2, attr)
                 
                 if any(a is None for a in [attr1, attr2]):
                     raise ValueError(f"Both waves must have {attr} defined")
                 
                 if isinstance(attr1, torch.Tensor) and isinstance(attr2, torch.Tensor):
-                    if not (torch.allclose(attr1, attr2) or 
-                           torch.allclose(attr1, attr2[0]) or 
-                           torch.allclose(attr1[0], attr2)):
+                    # Convert to same dtype before comparison
+                    attr1 = attr1.to(dtype=torch.float32)
+                    attr2 = attr2.to(dtype=torch.float32)
+                    
+                    if not (torch.allclose(attr1, attr2, rtol=1e-3) or 
+                           torch.allclose(attr1, attr2[0], rtol=1e-3) or 
+                           torch.allclose(attr1[0], attr2, rtol=1e-3)):
                         raise ValueError(f"Wave {attr}s do not match: {attr1} and {attr2}")
                 elif attr == 'form':
                     if attr1.ndim != attr2.ndim:
@@ -88,7 +94,7 @@ def requires_matching(*attributes: str) -> Callable:
                 elif attr1 != attr2:
                     raise ValueError(f"Wave {attr}s do not match: {attr1} and {attr2}")
                     
-            return func(self, reference, modulator, *args, **kwargs)
+            return func(*args, **kwargs)
         return wrapper
     return decorator
 

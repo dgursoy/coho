@@ -1,9 +1,10 @@
 """Wave module."""
 
 # Standard imports
-from typing import Union, Tuple
+from typing import Union, Tuple, Optional
 import torch
 from torch import Tensor
+from torch.nn import functional as F
 
 __all__ = ['Wave']
 
@@ -37,13 +38,28 @@ class Wave:
     def __init__(self, form: Tensor, energy: Tensor = None, 
                  spacing: Tensor = None, position: Tensor = None,
                  requires_grad: bool = False, device: Device = 'cpu') -> None:
-        """Initialize wave with complex field and properties."""
-        self.form = form
+        """Initialize wave with complex field and properties.
+        
+        Args:
+            form: Complex wave field of shape (batch, height, width)
+            energy: Photon energy in keV
+            spacing: Pixel size in meters
+            position: Wave position in meters
+            requires_grad: Enable gradient computation
+            device: Target device for wave tensors
+        """
+        # Initialize form with gradient requirements
+        self.form = form.clone()
+        if requires_grad:
+            self.form.requires_grad_()
+        
+        # Initialize other properties
         self.energy = energy
         self.spacing = spacing
         self.position = position
-        self.requires_grad = requires_grad
         self._freq2 = None
+        
+        # Move to device
         self.to(device)
 
     # Basic properties - Core tensor attributes and device/grad management
@@ -53,21 +69,16 @@ class Wave:
         return self.form.device
 
     @device.setter
-    def device(self, device: Union[str, torch.device]) -> None:
+    def device(self, device: Union[str, device]) -> None:
         """Move wave to specified device."""
         self.to(device)
 
     @property
     def requires_grad(self) -> bool:
-        """Gradient computation status."""
+        """Whether gradients are computed for this wave's form tensor."""
         return self.form.requires_grad
 
-    @requires_grad.setter
-    def requires_grad(self, value: bool) -> None:
-        """Set gradient computation status."""
-        self.form.requires_grad_(value)
-
-    def to(self, device: Union[str, torch.device]) -> 'Wave':
+    def to(self, device: Union[str, device]) -> 'Wave':
         """Move wave to specified device."""
         if isinstance(device, str):
             device = torch.device(device)
@@ -79,6 +90,10 @@ class Wave:
             if hasattr(self, attr):
                 setattr(self, attr, getattr(self, attr).to(device=device))
         return self
+
+    def clone(self) -> 'Wave':
+        """Returns deep copy with same properties and device."""
+        return self._create_like(self, self.form.clone())
 
     # Physical properties - Wave characteristics derived from energy/wavelength
     @property
@@ -174,39 +189,19 @@ class Wave:
 
     # Factory methods - Create new waves with specific patterns
     @classmethod
-    def zeros_like(cls, other: 'Wave') -> 'Wave':
-        """Create wave of zeros with same properties as other."""
-        return cls(
-            form=torch.zeros_like(other.form),
-            energy=other.energy,
-            spacing=other.spacing,
-            position=other.position,
-            requires_grad=other.form.requires_grad
-        )
+    def zeros_like(cls, other: 'Wave', *, requires_grad: bool = False) -> 'Wave':
+        """Returns wave of zeros with same properties as other."""
+        return cls._create_like(other, torch.zeros_like(other.form), requires_grad=requires_grad)
 
     @classmethod
-    def ones_like(cls, other: 'Wave') -> 'Wave':
-        """Create wave of ones with same properties as other."""
-        return cls(
-            form=torch.ones_like(other.form),
-            energy=other.energy,
-            spacing=other.spacing,
-            position=other.position,
-            requires_grad=other.form.requires_grad
-        )
+    def ones_like(cls, other: 'Wave', *, requires_grad: bool = False) -> 'Wave':
+        """Returns wave of ones with same properties as other."""
+        return cls._create_like(other, torch.ones_like(other.form), requires_grad=requires_grad)
 
     @classmethod
-    def rand_like(cls, other: 'Wave') -> 'Wave':
-        """Create wave with random amplitude [0,1] and phase [-π,π]."""
-        amp = torch.rand_like(other.form, dtype=torch.float)
-        phase = (torch.rand_like(other.form, dtype=torch.float) * 2 - 1) * torch.pi
-        return cls(
-            form=amp * torch.exp(1j * phase),
-            energy=other.energy,
-            spacing=other.spacing,
-            position=other.position,
-            requires_grad=other.form.requires_grad
-        )
+    def rand_like(cls, other: 'Wave', *, requires_grad: bool = False) -> 'Wave':
+        """Returns wave of random values with same properties as other."""
+        return cls._create_like(other, torch.rand_like(other.form), requires_grad=requires_grad)
 
     # Basic operations - Wave field transformations
     def vectorize(self, size: int) -> 'Wave':
@@ -217,55 +212,31 @@ class Wave:
         return self
     
     def normalize(self, *, eps: float = 1e-10) -> 'Wave':
-        """Returns wave normalized by maximum amplitude."""
+        """Returns normalized wave by maximum amplitude."""
         max_val = torch.abs(self.form).amax(dim=(-2,-1), keepdim=True)
-        return Wave(
-            form=self.form / (max_val + eps),
-            energy=self.energy,
-            spacing=self.spacing,
-            position=self.position
-        )
+        return self._like_me(torch.div(self.form, max_val + eps))
 
     def normalize_(self, *, eps: float = 1e-10) -> 'Wave':
         """In-place version of normalize()."""
-        self.form /= (torch.abs(self.form).amax(dim=(-2,-1), keepdim=True) + eps)
+        max_val = torch.abs(self.form).amax(dim=(-2,-1), keepdim=True)
+        self.form.div_(max_val + eps)  # True in-place using div_
         return self
 
-    def conjugate(self) -> 'Wave':
+    def conj(self) -> 'Wave':
         """Returns complex conjugate of wave."""
-        return Wave(
-            form=torch.conj(self.form),
-            energy=self.energy,
-            spacing=self.spacing,
-            position=self.position
-        )
+        return self._like_me(torch.conj(self.form))
 
-    def conjugate_(self) -> 'Wave':
-        """In-place version of conjugate()."""
+    def conj_(self) -> 'Wave':
+        """In-place version of conj()."""
         self.form = torch.conj(self.form)
         return self
-
-    def clone(self) -> 'Wave':
-        """Returns deep copy with same properties and device."""
-        attrs = {
-            name: getattr(self, name).clone() 
-            for name in self._tensor_attrs
-            if hasattr(self, name)
-        }
-        attrs['requires_grad'] = self.form.requires_grad
-        return Wave(**attrs)
 
     # Spatial operations - Manipulate wave's spatial representation
     def roll(self, shifts: Union[int, Tuple[int, int]]) -> 'Wave':
         """Returns wave rolled by (y, x) pixels."""
         if isinstance(shifts, (int, Tensor)):
             shifts = (shifts, shifts)
-        return Wave(
-            form=torch.roll(self.form, shifts=shifts, dims=(-2, -1)),
-            energy=self.energy,
-            spacing=self.spacing,
-            position=self.position
-        )
+        return self._like_me(torch.roll(self.form, shifts=shifts, dims=(-2, -1)))
 
     def roll_(self, shifts: Union[int, Tuple[int, int]]) -> 'Wave':
         """In-place version of roll()."""
@@ -285,48 +256,29 @@ class Wave:
         if isinstance(padding, (int, Tensor)):
             padding = (padding, padding)
         pad = (padding[1], padding[1], padding[0], padding[0])
-        return Wave(
-            form=torch.nn.functional.pad(self.form, pad, mode=mode, value=value),
-            energy=self.energy,
-            spacing=self.spacing,
-            position=self.position
-        )
+        return self._like_me(F.pad(self.form, pad, mode=mode, value=value))
 
-    def resize_as(self, other: 'Wave', *, value: float = 0.0) -> 'Wave':
-        """Returns wave resized to match other's dimensions.
-        
-        Centers while padding/cropping to match size.
-        """
-        if self.spacing != other.spacing:
-            raise ValueError("Waves must have same spacing")
-        
-        ny, nx = self.shape[-2:]
-        other_ny, other_nx = other.shape[-2:]
-        result = self.clone()
-        
-        if other_ny > ny or other_nx > nx:
-            pad_y = max(0, (other_ny - ny) // 2)
-            pad_x = max(0, (other_nx - nx) // 2)
-            result = result.pad((pad_y, pad_x), mode='constant', value=value)
-        
-        if result.shape[-2:] != other.shape[-2:]:
-            dy = (result.shape[-2] - other_ny) // 2
-            dx = (result.shape[-1] - other_nx) // 2
-            roi = (
-                slice(dy, dy + other_ny),
-                slice(dx, dx + other_nx)
-            )
-            result = result.crop(roi)
-        
-        return result
+    def pad_(self, padding: Union[int, Tuple[int, int]], *, 
+             mode: str = 'constant', value: float = 0) -> 'Wave':
+        """In-place version of pad()."""
+        if isinstance(padding, (int, Tensor)):
+            padding = (padding, padding)
+        pad = (padding[1], padding[1], padding[0], padding[0])
+        self.form = F.pad(self.form, pad, mode=mode, value=value)
+        return self
+
+    def resize(self, size: Tuple[int, int], mode: str = 'bilinear') -> 'Wave':
+        """Returns wave resized to size using amplitude/phase interpolation."""
+        return self._like_me(self._resize_form(size, mode))
+
+    def resize_(self, size: Tuple[int, int], mode: str = 'bilinear') -> 'Wave':
+        """In-place version of resize()."""
+        self.form = self._resize_form(size, mode)
+        return self
 
     # Math operations - Arithmetic between waves or with scalars
     def _maybe_get_operands(self, other: FormOrScalar) -> OperandTensors:
-        """Get operands for arithmetic, handling tensor and scalar cases.
-        
-        Returns:
-            tuple: (self.form, other_form) on same device
-        """
+        """Get operands for arithmetic, handling tensor and scalar cases."""
         if isinstance(other, (float, int)):
             return self.form, other
             
@@ -339,84 +291,61 @@ class Wave:
         
         raise TypeError(f"Cannot operate with {type(other)}")
 
+    # Regular arithmetic operations
     def __add__(self, other: FormOrScalar) -> 'Wave':
         """Returns wave + other."""
         form1, form2 = self._maybe_get_operands(other)
-        return Wave(
-            form=form1 + form2,
-            energy=self.energy,
-            spacing=self.spacing,
-            position=self.position
-        )
+        return self._like_me(form1 + form2, requires_grad=self._inherit_grad(form1, form2))
     
     def __sub__(self, other: FormOrScalar) -> 'Wave':
         """Returns wave - other."""
         form1, form2 = self._maybe_get_operands(other)
-        return Wave(
-            form=form1 - form2,
-            energy=self.energy,
-            spacing=self.spacing,
-            position=self.position
-        )
+        return self._like_me(form1 - form2, requires_grad=self._inherit_grad(form1, form2))
     
     def __mul__(self, other: FormOrScalar) -> 'Wave':
         """Returns wave * other."""
         form1, form2 = self._maybe_get_operands(other)
-        return Wave(
-            form=form1 * form2,
-            energy=self.energy,
-            spacing=self.spacing,
-            position=self.position
-        )
+        return self._like_me(form1 * form2, requires_grad=self._inherit_grad(form1, form2))
 
     def __truediv__(self, other: FormOrScalar, *, eps: float = 1e-10) -> 'Wave':
         """Returns wave / other with numerical stability."""
         form1, form2 = self._maybe_get_operands(other)
-        return Wave(
-            form=form1 / (form2 + eps),
-            energy=self.energy,
-            spacing=self.spacing,
-            position=self.position
-        )
+        return self._like_me(form1 / (form2 + eps), requires_grad=self._inherit_grad(form1, form2))
 
-    # In-place math operations
+    # In-place arithmetic operations
     def __iadd__(self, other: FormOrScalar) -> 'Wave':
         """In-place version of add."""
-        form1, form2 = self._maybe_get_operands(other)
-        self.form = form1 + form2
+        _, form2 = self._maybe_get_operands(other)
+        self.form.add_(form2)  # True in-place using add_
         return self
 
     def __isub__(self, other: FormOrScalar) -> 'Wave':
         """In-place version of subtract."""
-        form1, form2 = self._maybe_get_operands(other)
-        self.form = form1 - form2
+        _, form2 = self._maybe_get_operands(other)
+        self.form.sub_(form2)  # True in-place using sub_
         return self
 
     def __imul__(self, other: FormOrScalar) -> 'Wave':
         """In-place version of multiply."""
-        form1, form2 = self._maybe_get_operands(other)
-        self.form = form1 * form2
+        _, form2 = self._maybe_get_operands(other)
+        self.form.mul_(form2)  # True in-place using mul_
         return self
 
     def __itruediv__(self, other: FormOrScalar, *, eps: float = 1e-10) -> 'Wave':
         """In-place version of divide."""
-        form1, form2 = self._maybe_get_operands(other)
-        self.form = form1 / (form2 + eps)
+        _, form2 = self._maybe_get_operands(other)
+        self.form.div_(form2 + eps)  # True in-place using div_
         return self
     
-    # Reverse math operations
+    # Reverse arithmetic operations
     def __rmul__(self, other: Scalar) -> 'Wave':
         """Returns other * wave."""
-        return self.__mul__(other)
-    
+        return self.__mul__(other)  # Reuse __mul__ since multiplication is commutative
+
     def __rtruediv__(self, other: Scalar, *, eps: float = 1e-10) -> 'Wave':
         """Returns other / wave."""
-        return Wave(
-            form=other / (self.form + eps),
-            energy=self.energy,
-            spacing=self.spacing,
-            position=self.position
-        )
+        form1, form2 = self._maybe_get_operands(other)  # other is scalar, self.form is denominator
+        return self._like_me(form1 / (form2 + eps), requires_grad=self._inherit_grad(form2))
 
     # String representations
     def __str__(self) -> str:
@@ -430,6 +359,49 @@ class Wave:
             if hasattr(self, attr):
                 val = getattr(self, attr)
                 fmt = self._repr_formats.get(attr, '')
-                val_str = f"{float(val[0]):{fmt}}" if len(val) == 1 else "[...]"
+                val_str = f"{val.item():{fmt}}" if val.numel() == 1 else "[...]"
                 attrs.append(f"{attr}={val_str}")
         return f"Wave({', '.join(attrs)})"
+
+    # Helper methods
+    @classmethod
+    def _create_like(cls, other: 'Wave', form: Tensor, *, requires_grad: Optional[bool] = None) -> 'Wave':
+        """Helper to create new wave with template properties but different form."""
+        attrs = {
+            name: getattr(other, name).clone() 
+            for name in cls._tensor_attrs
+            if hasattr(other, name) and name != 'form'
+        }
+        attrs['form'] = form
+        attrs['requires_grad'] = requires_grad if requires_grad is not None else form.requires_grad
+        return cls(**attrs)
+    
+    def _like_me(self, form: Tensor, *, requires_grad: Optional[bool] = None) -> 'Wave':
+        """Create new wave with same properties as self."""
+        return Wave(
+            form=form,
+            energy=self.energy,
+            spacing=self.spacing,
+            position=self.position,
+            requires_grad=requires_grad if requires_grad is not None else form.requires_grad
+        )
+
+    def _inherit_grad(self, *tensors) -> bool:
+        """Determine gradient requirement from parent tensors."""
+        return any(t.requires_grad for t in tensors if hasattr(t, 'requires_grad'))
+    
+    def _resize_form(self, size: Tuple[int, int], mode: str = 'bilinear') -> Tuple[Tensor, Tensor]:
+        """Helper to resize wave form."""
+        amp_resized = F.interpolate(
+            self.amplitude.unsqueeze(1), 
+            size=size, 
+            mode=mode
+        ).squeeze(1)
+        
+        phase_resized = F.interpolate(
+            self.phase.unsqueeze(1), 
+            size=size, 
+            mode=mode
+        ).squeeze(1)
+        
+        return torch.polar(amp_resized, phase_resized)

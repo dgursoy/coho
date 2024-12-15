@@ -50,8 +50,7 @@ class Wave:
         """
         # Initialize form with gradient requirements
         self.form = form.clone()
-        if requires_grad:
-            self.form.requires_grad_()
+        self.form.requires_grad_(requires_grad)
         
         # Initialize other properties
         self.energy = energy
@@ -93,7 +92,7 @@ class Wave:
 
     def clone(self) -> 'Wave':
         """Returns deep copy with same properties and device."""
-        return self._create_like(self, self.form.clone())
+        return self._create_like(self, self.form.clone(), requires_grad=self.requires_grad)
 
     # Physical properties - Wave characteristics derived from energy/wavelength
     @property
@@ -191,17 +190,20 @@ class Wave:
     @classmethod
     def zeros_like(cls, other: 'Wave', *, requires_grad: bool = False) -> 'Wave':
         """Returns wave of zeros with same properties as other."""
-        return cls._create_like(other, torch.zeros_like(other.form), requires_grad=requires_grad)
+        form = torch.zeros_like(other.form)
+        return cls._create_like(other, form, requires_grad=requires_grad)
 
     @classmethod
     def ones_like(cls, other: 'Wave', *, requires_grad: bool = False) -> 'Wave':
         """Returns wave of ones with same properties as other."""
-        return cls._create_like(other, torch.ones_like(other.form), requires_grad=requires_grad)
+        form = torch.ones_like(other.form)
+        return cls._create_like(other, form, requires_grad=requires_grad)
 
     @classmethod
     def rand_like(cls, other: 'Wave', *, requires_grad: bool = False) -> 'Wave':
         """Returns wave of random values with same properties as other."""
-        return cls._create_like(other, torch.rand_like(other.form), requires_grad=requires_grad)
+        form = torch.rand_like(other.form)
+        return cls._create_like(other, form, requires_grad=requires_grad)
 
     # Basic operations - Wave field transformations
     def vectorize(self, size: int) -> 'Wave':
@@ -373,7 +375,7 @@ class Wave:
             if hasattr(other, name) and name != 'form'
         }
         attrs['form'] = form
-        attrs['requires_grad'] = requires_grad if requires_grad is not None else form.requires_grad
+        attrs['requires_grad'] = requires_grad if requires_grad is not None else other.requires_grad
         return cls(**attrs)
     
     def _like_me(self, form: Tensor, *, requires_grad: Optional[bool] = None) -> 'Wave':

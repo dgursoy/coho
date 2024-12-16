@@ -48,8 +48,8 @@ def validate_matching_position(func: Callable) -> Callable:
     """Validate that wave positions match."""
     @wraps(func)
     def wrapper(self, reference: Wave, modulator: Wave, *args, **kwargs) -> Any:
-        print (reference.position)
-        print (modulator.position)
+        # print (reference.position)
+        # print (modulator.position)
         if any(w.position is None for w in [reference, modulator]):
             raise ValueError("Both waves must have positions defined")
         pos1, pos2 = np.atleast_1d(reference.position), np.atleast_1d(modulator.position)

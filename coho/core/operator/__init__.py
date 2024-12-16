@@ -5,6 +5,11 @@ from .propagate import Propagate
 from .interact import Modulate, Detect, Crop, Shift
 from .scan import Broadcast
 from .base import Operator
+from .covariance import (
+    Covariance,
+    SparseCovariance,
+    SparseCovarianceLocalization,
+)
 
 __all__ = [
     'Propagate',
@@ -14,4 +19,8 @@ __all__ = [
     'Broadcast',
     'Crop',
     'Shift',
+    #
+    'Covariance',
+    'SparseCovariance',
+    'SparseCovarianceLocalization',
 ]

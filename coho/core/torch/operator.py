@@ -16,12 +16,12 @@ Operators:
 import torch
 import torch.nn as nn
 from torch import Tensor
-from torch.autograd.function import Function as F, FunctionCtx
+from torch.autograd.function import Function as F
 from typing import Optional, Tuple, Union
 
 # Local imports
 from .wave import Wave
-from .utils.decorators import (
+from ..utils.decorators import (
     requires_matching,
 )
 
@@ -63,9 +63,7 @@ class Detect(Operator):
         
     @staticmethod
     def _forward_auto(wave: Wave) -> Tensor:
-        if wave.form.requires_grad:
-            return torch.abs(wave.form) # Out-of-place for gradient tracking
-        return wave.form.abs_()  # In-place when no gradients needed
+        return torch.abs(wave.form) # No in-place operation for abs() 
     
 
 class _DetectFunction(F):
@@ -74,7 +72,8 @@ class _DetectFunction(F):
     @staticmethod
     def forward(ctx, wave_form: Tensor) -> Tensor:
         output = torch.abs(wave_form)
-        ctx.save_for_backward(wave_form)
+        if ctx.needs_input_grad[0]:
+            ctx.save_for_backward(wave_form)
         return output
 
     @staticmethod
@@ -103,28 +102,13 @@ class Propagate(Operator):
         output_form = _PropagateFunction.apply(
             wave.form, distance, wave.wavelength, wave.freq2
         )
-        new_wave = wave._like_me(output_form)
-        new_wave.position = wave.position + distance
-        return new_wave
+        return wave.clone_with(form=output_form, position=wave.position + distance)
         
     @staticmethod
     def _forward_auto(wave: Wave, distance: Tensor) -> Wave:
         kernel = Propagate._compute_kernel(wave, distance)
-        fft_form = torch.fft.fft2(wave.form, dim=(-2, -1))
-        
-        if wave.form.requires_grad: 
-            # Out-of-place for gradient tracking
-            fft_form = fft_form * kernel
-            new_wave = wave._like_me(torch.fft.ifft2(fft_form, dim=(-2, -1)))
-        else:  
-            # In-place when no gradients needed
-            fft_form.mul_(kernel)  # In-place
-            wave.form = torch.fft.ifft2(fft_form, dim=(-2, -1)) 
-            new_wave = wave
-        
-        new_wave.position = new_wave.position + distance 
-        return new_wave
-    
+        result = torch.fft.ifft2(torch.fft.fft2(wave.form, dim=(-2, -1)) * kernel, dim=(-2, -1))
+        return wave.clone_with(form=result, position=wave.position + distance)
 
 class _PropagateFunction(F):
     """Custom gradient implementation for Fresnel propagation."""
@@ -149,17 +133,14 @@ class _PropagateFunction(F):
         kernel = torch.exp(-1j * wavelength * expanded_distance * freq2)
         fft_form = torch.fft.fft2(wave_form, dim=(-2, -1)) * kernel
         output = torch.fft.ifft2(fft_form, dim=(-2, -1))
-
-        ctx.save_for_backward(expanded_distance, wavelength, freq2)
+        if ctx.needs_input_grad[0]:
+            ctx.save_for_backward(wave_form, expanded_distance, wavelength, freq2)
         return output
 
     @staticmethod
     def backward(ctx, grad_output: Tensor) -> Tuple[Tensor, None, None, None]:
-        expanded_distance, wavelength, freq2 = ctx.saved_tensors
-        kernel = torch.exp(1j * wavelength * -expanded_distance * freq2)
-        fft_grad = torch.fft.fft2(grad_output, dim=(-2, -1)) * kernel
-        grad_wave = torch.fft.ifft2(fft_grad, dim=(-2, -1))
-        return grad_wave, None, None, None
+        wave_form, expanded_distance, wavelength, freq2 = ctx.saved_tensors
+        return wave_form - grad_output, None, None, None
 
 
 class Modulate(Operator):
@@ -170,17 +151,15 @@ class Modulate(Operator):
     """
     
     @staticmethod
-    # @requires_matching('energy', 'spacing', 'position')
+    @requires_matching('energy', 'spacing', 'position')
     def _forward_custom(wave1: Wave, wave2: Wave) -> Wave:
         output_form = _ModulateFunction.apply(wave1.form, wave2.form)
-        return wave1._like_me(output_form)
-        
+        return wave1.clone_with(form=output_form)
+
     @staticmethod
     @requires_matching('energy', 'spacing', 'position')
     def _forward_auto(wave1: Wave, wave2: Wave) -> Wave:
-        if wave1.form.requires_grad or wave2.form.requires_grad:
-            return wave1._like_me(wave1.form * wave2.form) # In-place for gradient tracking
-        return wave1 * wave2 # Out-of-place when no gradients needed
+        return wave1.clone_with(form=wave1.form * wave2.form)
     
 
 class _ModulateFunction(F):
@@ -189,13 +168,22 @@ class _ModulateFunction(F):
     @staticmethod
     def forward(ctx, wave1_form: Tensor, wave2_form: Tensor) -> Tensor:
         output = wave1_form * wave2_form
-        ctx.save_for_backward(wave1_form, wave2_form)
+        saved_tensors = []
+        if ctx.needs_input_grad[0]:
+            saved_tensors.append(wave1_form)
+        if ctx.needs_input_grad[1]:
+            saved_tensors.append(wave2_form)
+        if saved_tensors:
+            ctx.save_for_backward(*saved_tensors)
         return output
 
     @staticmethod
     def backward(ctx, grad_output: Tensor) -> Tuple[Optional[Tensor], Optional[Tensor]]:
+        if not hasattr(ctx, 'needs_grad1'):  # No gradients needed
+            return None, None
         wave1_form, wave2_form = ctx.saved_tensors
-        grad1 = grad_output * wave2_form.conj() if wave1_form.requires_grad else None
-        grad2 = grad_output * wave1_form.conj() if wave2_form.requires_grad else None
-        return grad1, grad2
+        return (
+            grad_output * wave2_form.conj() if ctx.needs_input_grad[0] else None,
+            grad_output * wave1_form.conj() if ctx.needs_input_grad[1] else None
+        )
     

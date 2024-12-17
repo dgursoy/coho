@@ -66,7 +66,6 @@ class Pipeline(nn.Module):
         # Build the graph
         for node in config:
             params = node.params or {}
-            print(f"Creating {node.operator.__name__} with params: {params}")  # Debug
             op = node.operator(**params)
             self.ops.append(op)
             self.op_inputs.append(node.inputs)

@@ -1,10 +1,11 @@
 """Wave module."""
 
 # Standard imports
-from typing import Union, Tuple, Optional
+from typing import Union, Tuple, Optional, Dict
 import torch
 from torch import Tensor
 from torch.nn import functional as F
+import torch.nn as nn
 
 __all__ = ['Wave']
 
@@ -14,16 +15,15 @@ Scalar = Union[float, int]
 FormOrScalar = Union[Tensor, Scalar] 
 OperandTensors = Tuple[Tensor, Tensor]
 
-class Wave:
+class Wave(nn.Module):
     """Complex wave field using PyTorch tensors.
     
     All operations maintain batch dimension (batch, n, n).
     Handles device placement and gradient computation.
     """
-
-    # Core attributes - Define wave's tensor properties and caching behavior
-    # List of tensor attributes that need to be moved to device
-    _tensor_attrs = ['form', 'energy', 'spacing', 'position']
+    # Class-level parameter definitions
+    PARAMETERS = ['form']  # Parameters that can be optimized
+    BUFFERS = ['energy', 'spacing', 'position']  # Non-optimizable buffers
     
     # List of cached properties that should be cleared on device change
     _cached_attrs = ['_freq2']
@@ -37,7 +37,7 @@ class Wave:
 
     def __init__(self, form: Tensor, energy: Tensor = None, 
                  spacing: Tensor = None, position: Tensor = None,
-                 requires_grad: bool = False, device: Device = 'cpu') -> None:
+                 device: Device = 'cpu') -> None:
         """Initialize wave with complex field and properties.
         
         Args:
@@ -45,23 +45,54 @@ class Wave:
             energy: Photon energy in keV
             spacing: Pixel size in meters
             position: Wave position in meters
-            requires_grad: Enable gradient computation
             device: Target device for wave tensors
         """
-        # Initialize form with gradient requirements
-        self.form = form.clone()
-        self.form.requires_grad_(requires_grad)
-        
-        # Initialize other properties
-        self.energy = energy
-        self.spacing = spacing
-        self.position = position
+        super().__init__()
+
+        # Register parameters and buffers based on class definitions
+        for name in self.PARAMETERS:
+            value = locals()[name]
+            if value is not None:
+                self.register_parameter(name, nn.Parameter(value))
+                
+        for name in self.BUFFERS:
+            value = locals()[name]
+            if value is not None:
+                self.register_buffer(name, value)
+
+        # Initialize cached properties
         self._freq2 = None
         
         # Move to device
         self.to(device)
 
-    # Basic properties - Core tensor attributes and device/grad management
+    # Core parameter management
+    def clone(self) -> 'Wave':
+        """Create a new Wave instance preserving all properties and their types."""
+        return Wave(
+            **{
+                name: (nn.Parameter(value) if isinstance(value, nn.Parameter) else value)
+                for name in self.PARAMETERS + self.BUFFERS
+                if (value := getattr(self, name, None)) is not None
+            },
+            device=self.device
+        )
+
+    def clone_with(self, **updates) -> 'Wave':
+        """Create new Wave with updated values, preserving computation graph."""
+        wave = self.clone()
+        
+        for name, value in updates.items():
+            if hasattr(self, name):
+                if isinstance(getattr(self, name), nn.Parameter):
+                    delattr(wave, name)  # Remove existing Parameter
+                    # Always register as Parameter to maintain gradient flow
+                    wave.register_parameter(name, nn.Parameter(value))
+                else:
+                    setattr(wave, name, value)
+        
+        return wave
+    
     @property
     def device(self) -> torch.device:
         """Current device of wave tensors."""
@@ -82,19 +113,14 @@ class Wave:
         if isinstance(device, str):
             device = torch.device(device)
         
+        # Clear cached properties
         for attr in self._cached_attrs:
             setattr(self, attr, None)
         
-        for attr in self._tensor_attrs:
-            if hasattr(self, attr):
-                setattr(self, attr, getattr(self, attr).to(device=device))
+        super().to(device)
         return self
 
-    def clone(self) -> 'Wave':
-        """Returns deep copy with same properties and device."""
-        return self._create_like(self, self.form.clone(), requires_grad=self.requires_grad)
-
-    # Physical properties - Wave characteristics derived from energy/wavelength
+    # Physical properties - Wave characteristics derived from energy
     @property
     def wavelength(self) -> float:
         """Wavelength in meters from energy (keV)."""
@@ -188,35 +214,31 @@ class Wave:
 
     # Factory methods - Create new waves with specific patterns
     @classmethod
-    def zeros_like(cls, other: 'Wave', *, requires_grad: bool = False) -> 'Wave':
-        """Returns wave of zeros with same properties as other."""
-        form = torch.zeros_like(other.form)
-        return cls._create_like(other, form, requires_grad=requires_grad)
+    def zeros_like(cls, other: 'Wave') -> 'Wave':
+        """Returns wave of zeros with same properties as template."""
+        return other.clone_with(form=torch.zeros_like(other.form))
 
     @classmethod
-    def ones_like(cls, other: 'Wave', *, requires_grad: bool = False) -> 'Wave':
-        """Returns wave of ones with same properties as other."""
-        form = torch.ones_like(other.form)
-        return cls._create_like(other, form, requires_grad=requires_grad)
+    def ones_like(cls, other: 'Wave') -> 'Wave':
+        """Returns wave of ones with same properties as template."""
+        return other.clone_with(form=torch.ones_like(other.form))
 
     @classmethod
-    def rand_like(cls, other: 'Wave', *, requires_grad: bool = False) -> 'Wave':
-        """Returns wave of random values with same properties as other."""
-        form = torch.rand_like(other.form)
-        return cls._create_like(other, form, requires_grad=requires_grad)
+    def rand_like(cls, other: 'Wave') -> 'Wave':
+        """Returns wave of random values with same properties as template."""
+        return other.clone_with(form=torch.rand_like(other.form))
 
     # Basic operations - Wave field transformations
-    def vectorize(self, size: int) -> 'Wave':
-        """Expand wave along first dimension for parallel processing."""
-        if len(self.form.shape) > 2:
-            raise ValueError("Wave is already vectorized")
-        self.form = self.form.expand(size, *self.form.shape[-2:])
-        return self
+    def vectorize(self, size: int, attr: str = 'form') -> 'Wave':
+        """Expand specified attribute to batch size by repeating."""
+        value = getattr(self, attr)
+        expanded = value.expand(size, *value.shape[1:])
+        return self.clone_with(**{attr: expanded})
     
     def normalize(self, *, eps: float = 1e-10) -> 'Wave':
         """Returns normalized wave by maximum amplitude."""
         max_val = torch.abs(self.form).amax(dim=(-2,-1), keepdim=True)
-        return self._like_me(torch.div(self.form, max_val + eps))
+        return self.clone_with(form=torch.div(self.form, max_val + eps))
 
     def normalize_(self, *, eps: float = 1e-10) -> 'Wave':
         """In-place version of normalize()."""
@@ -226,7 +248,7 @@ class Wave:
 
     def conj(self) -> 'Wave':
         """Returns complex conjugate of wave."""
-        return self._like_me(torch.conj(self.form))
+        return self.clone_with(form=torch.conj(self.form))
 
     def conj_(self) -> 'Wave':
         """In-place version of conj()."""
@@ -238,7 +260,7 @@ class Wave:
         """Returns wave rolled by (y, x) pixels."""
         if isinstance(shifts, (int, Tensor)):
             shifts = (shifts, shifts)
-        return self._like_me(torch.roll(self.form, shifts=shifts, dims=(-2, -1)))
+        return self.clone_with(form=torch.roll(self.form, shifts=shifts, dims=(-2, -1)))
 
     def roll_(self, shifts: Union[int, Tuple[int, int]]) -> 'Wave':
         """In-place version of roll()."""
@@ -258,7 +280,7 @@ class Wave:
         if isinstance(padding, (int, Tensor)):
             padding = (padding, padding)
         pad = (padding[1], padding[1], padding[0], padding[0])
-        return self._like_me(F.pad(self.form, pad, mode=mode, value=value))
+        return self.clone_with(form=F.pad(self.form, pad, mode=mode, value=value))
 
     def pad_(self, padding: Union[int, Tuple[int, int]], *, 
              mode: str = 'constant', value: float = 0) -> 'Wave':
@@ -271,7 +293,7 @@ class Wave:
 
     def resize(self, size: Tuple[int, int], mode: str = 'bilinear') -> 'Wave':
         """Returns wave resized to size using amplitude/phase interpolation."""
-        return self._like_me(self._resize_form(size, mode))
+        return self.clone_with(form=self._resize_form(size, mode))
 
     def resize_(self, size: Tuple[int, int], mode: str = 'bilinear') -> 'Wave':
         """In-place version of resize()."""
@@ -283,60 +305,53 @@ class Wave:
         """Get operands for arithmetic, handling tensor and scalar cases."""
         if isinstance(other, (float, int)):
             return self.form, other
-            
         if hasattr(other, 'form'):
-            if other.form.device != self.form.device:
-                raise RuntimeError(
-                    f"Expected same device, got {self.form.device} and {other.form.device}"
-                )
             return self.form, other.form
-        
-        raise TypeError(f"Cannot operate with {type(other)}")
 
     # Regular arithmetic operations
     def __add__(self, other: FormOrScalar) -> 'Wave':
         """Returns wave + other."""
         form1, form2 = self._maybe_get_operands(other)
-        return self._like_me(form1 + form2, requires_grad=self._inherit_grad(form1, form2))
+        return self.clone_with(form=form1 + form2)
     
     def __sub__(self, other: FormOrScalar) -> 'Wave':
         """Returns wave - other."""
         form1, form2 = self._maybe_get_operands(other)
-        return self._like_me(form1 - form2, requires_grad=self._inherit_grad(form1, form2))
+        return self.clone_with(form=form1 - form2)
     
     def __mul__(self, other: FormOrScalar) -> 'Wave':
         """Returns wave * other."""
         form1, form2 = self._maybe_get_operands(other)
-        return self._like_me(form1 * form2, requires_grad=self._inherit_grad(form1, form2))
+        return self.clone_with(form=form1 * form2)
 
     def __truediv__(self, other: FormOrScalar, *, eps: float = 1e-10) -> 'Wave':
         """Returns wave / other with numerical stability."""
         form1, form2 = self._maybe_get_operands(other)
-        return self._like_me(form1 / (form2 + eps), requires_grad=self._inherit_grad(form1, form2))
+        return self.clone_with(form=form1 / (form2 + eps))
 
     # In-place arithmetic operations
     def __iadd__(self, other: FormOrScalar) -> 'Wave':
         """In-place version of add."""
         _, form2 = self._maybe_get_operands(other)
-        self.form.add_(form2)  # True in-place using add_
+        self.form = nn.Parameter(self.form + form2)
         return self
 
     def __isub__(self, other: FormOrScalar) -> 'Wave':
         """In-place version of subtract."""
         _, form2 = self._maybe_get_operands(other)
-        self.form.sub_(form2)  # True in-place using sub_
+        self.form = nn.Parameter(self.form - form2)
         return self
 
     def __imul__(self, other: FormOrScalar) -> 'Wave':
         """In-place version of multiply."""
         _, form2 = self._maybe_get_operands(other)
-        self.form.mul_(form2)  # True in-place using mul_
+        self.form = nn.Parameter(self.form * form2)
         return self
 
     def __itruediv__(self, other: FormOrScalar, *, eps: float = 1e-10) -> 'Wave':
         """In-place version of divide."""
         _, form2 = self._maybe_get_operands(other)
-        self.form.div_(form2 + eps)  # True in-place using div_
+        self.form = nn.Parameter(self.form / (form2 + eps))
         return self
     
     # Reverse arithmetic operations
@@ -347,7 +362,7 @@ class Wave:
     def __rtruediv__(self, other: Scalar, *, eps: float = 1e-10) -> 'Wave':
         """Returns other / wave."""
         form1, form2 = self._maybe_get_operands(other)  # other is scalar, self.form is denominator
-        return self._like_me(form1 / (form2 + eps), requires_grad=self._inherit_grad(form2))
+        return self.clone_with(form=form1 / (form2 + eps))
 
     # String representations
     def __str__(self) -> str:
@@ -366,28 +381,6 @@ class Wave:
         return f"Wave({', '.join(attrs)})"
 
     # Helper methods
-    @classmethod
-    def _create_like(cls, other: 'Wave', form: Tensor, *, requires_grad: Optional[bool] = None) -> 'Wave':
-        """Helper to create new wave with template properties but different form."""
-        attrs = {
-            name: getattr(other, name).clone() 
-            for name in cls._tensor_attrs
-            if hasattr(other, name) and name != 'form'
-        }
-        attrs['form'] = form
-        attrs['requires_grad'] = requires_grad if requires_grad is not None else other.requires_grad
-        return cls(**attrs)
-    
-    def _like_me(self, form: Tensor, *, requires_grad: Optional[bool] = None) -> 'Wave':
-        """Create new wave with same properties as self."""
-        return Wave(
-            form=form,
-            energy=self.energy,
-            spacing=self.spacing,
-            position=self.position,
-            requires_grad=requires_grad if requires_grad is not None else form.requires_grad
-        )
-
     def _inherit_grad(self, *tensors) -> bool:
         """Determine gradient requirement from parent tensors."""
         return any(t.requires_grad for t in tensors if hasattr(t, 'requires_grad'))
@@ -407,3 +400,36 @@ class Wave:
         ).squeeze(1)
         
         return torch.polar(amp_resized, phase_resized)
+    
+    # Plotting
+    def plot(self, title: str = "Wave", height: int = 6) -> None:
+        """Plot amplitude and phase for up to 4 waves in the batch.
+        
+        Args:
+            title: Base title for the plot
+            height: Figure height in inches (width will be proportional to batch size)
+        """
+        import matplotlib.pyplot as plt
+        
+        # Get number of waves to plot (up to 4)
+        n_waves = min(4, self.form.shape[0])
+        
+        # Adjust figure width based on number of waves (5 inches per wave)
+        width = 4 * n_waves
+        plt.figure(figsize=(width, height))
+        
+        for m in range(n_waves):
+            # Amplitude plot
+            plt.subplot(2, n_waves, m+1)
+            plt.title(f'{title} {m+1} Amplitude')
+            plt.imshow(self.form[m].abs().detach().cpu(), cmap='gray')
+            plt.colorbar()
+            
+            # Phase plot
+            plt.subplot(2, n_waves, m+n_waves+1)
+            plt.title(f'{title} {m+1} Phase')
+            plt.imshow(self.form[m].angle().detach().cpu(), cmap='gray')
+            plt.colorbar()
+        
+        plt.tight_layout()
+        plt.show()

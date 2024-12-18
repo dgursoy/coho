@@ -85,3 +85,19 @@ class Wave:
             energy=self.energy,  # Keep original energy
             spacing=self.spacing  # Keep original spacing
         )
+    
+    def __neg__(self) -> 'Wave':
+        """Negate the wave form."""
+        return Wave(
+            form=-self.form,
+            energy=self.energy,
+            spacing=self.spacing
+        )
+    
+    def __add__(self, other: 'Wave') -> 'Wave':
+        """Add another wave's form."""
+        return Wave(
+            form=self.form + other.form,
+            energy=self.energy,
+            spacing=self.spacing
+        )

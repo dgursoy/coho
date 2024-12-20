@@ -1,12 +1,12 @@
 # Using Coho
 
-Coho is designed with flexibility and extensibility in mind, allowing users to define their own experiments. This requires understanding the fundamentals of imaging setups, including defining the necessary operators and constructing a graph that simulates the imaging process effectively.
+Coho is designed with flexibility and extensibility in mind, allowing users to define their own experiments. This requires understanding the fundamentals of imaging setups, including defining the necessary operators and constructing a model that simulates the imaging process effectively.
 
 ## Key Topics
 
 * **[Waves:](waves.md)** Wave objects and their properties
 * **[Operators:](operators.md)** Operators acting on waves to modify them
-* **[Graphs:](graphs.md)** Graphs for combining operators to simulate complex imaging processes
+* **[Models:](models.md)** Models for simulating complex imaging processes
 
 Each topic is covered in detail in its respective section. Start with [Quick Start](../quickstart.md) to kick off your first experiment. Also, check out the [Examples](../examples/index.md) section to see built-in graphs corresponding to common imaging setups.
 

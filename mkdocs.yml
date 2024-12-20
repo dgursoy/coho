@@ -58,13 +58,19 @@ theme:
 # Navigation structure
 nav:
   - Home: index.md
+  - About: about.md
   - Installation: installation.md
   - Quick Start: quickstart.md
   - Usage:
       - Overview: usage/index.md
-      - Waves: usage/waves.md
+      - Wave: usage/wave.md
       - Operators: usage/operators.md
-      - Graphs: usage/graphs.md
+      - Models: usage/models.md
+      - Solvers: usage/solvers.md
+      - Costs: usage/costs.md
+      - Metrics: usage/metrics.md
+      - Monitoring: usage/monitoring.md
+      - Plotting: usage/plotting.md
   - Examples:
       - Overview: examples/index.md
   - Contributing: 

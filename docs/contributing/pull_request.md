@@ -11,7 +11,7 @@ Try to follow the PR title and description format below.
 ```
 [TYPE] Brief description
 ```
-Where `TYPE` is one of: `FEATURE`, `FIX`, `DOCS`, `STYLE`, `REFACTOR`, `TEST`
+Where `TYPE` is one of: `NEW`, `FIX`, `DOCS`, `STYLE`, `REFACTOR`, `TEST`
 
 ### **PR Description Template**
 

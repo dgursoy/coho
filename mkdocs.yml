@@ -58,25 +58,19 @@ theme:
 # Navigation structure
 nav:
   - Home: index.md
+  - About: about.md
   - Installation: installation.md
   - Quick Start: quickstart.md
   - Usage:
       - Overview: usage/index.md
-      - Configuration Guide: usage/configuration.md
-      - Component Definitions:
-          - Overview: usage/components/index.md
-          - Wavefront: usage/components/wavefront.md   
-          - Aperture: usage/components/aperture.md
-          - Sample: usage/components/sample.md
-          - Detector: usage/components/detector.md
-      - Experiment Definitions: 
-          - Overview: usage/experiment/index.md
-          - State Definitions: usage/experiment/states.md
-      - Runtime Operations: 
-          - Overview: usage/runtime/index.md
-          - Simulation: usage/runtime/simulation.md
-          - Reconstruction: usage/runtime/reconstruction.md
-          - Devices: usage/runtime/devices.md
+      - Wave: usage/wave.md
+      - Operators: usage/operators.md
+      - Models: usage/models.md
+      - Solvers: usage/solvers.md
+      - Costs: usage/costs.md
+      - Metrics: usage/metrics.md
+      - Monitoring: usage/monitoring.md
+      - Plotting: usage/plotting.md
   - Examples:
       - Overview: examples/index.md
   - Contributing: 

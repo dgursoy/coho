@@ -4,11 +4,11 @@ from typing import Union, Tuple, List
 
 class Wave:
     """A class representing a complex wave field."""
-    
+
     def __init__(self,
-                 form: np.ndarray, 
-                 energy: float = None, 
-                 spacing: float = None, 
+                 form: np.ndarray,
+                 energy: float = None,
+                 spacing: float = None,
                  position: Union[float, np.ndarray] = 0.0,
                  x: Union[float, np.ndarray] = 0.0,
                  y: Union[float, np.ndarray] = 0.0):
@@ -26,7 +26,7 @@ class Wave:
     def wavelength(self) -> float:
         """Wavelength derived from energy in keV."""
         return np.divide(1.23984193e-7, self.energy)
-    
+
     @property
     def wavenumber(self) -> float:
         """Wavenumber (2π divided by wavelength)."""
@@ -51,7 +51,7 @@ class Wave:
     def phase(self) -> np.ndarray:
         """Phase of wave form."""
         return np.angle(self.form)
-    
+
     def conjugate(self) -> 'Wave':
         """Conjugate the wave."""
         self.form = np.conjugate(self.form)
@@ -60,15 +60,15 @@ class Wave:
     def _prepare_broadcast(self, other: Union['Wave', float, int]) -> Tuple[np.ndarray, np.ndarray]:
         """Prepare arrays for multiplication without broadcasting."""
         form1 = self.form
-        
+
         # Prepare other
         if isinstance(other, (float, int)):
             form2 = other
         else:
             form2 = other.form
-        
+
         return form1, form2
-    
+
     def __mul__(self, other: Union['Wave', float, int]) -> 'Wave':
         """Multiplication."""
         form1, form2 = self._prepare_broadcast(other)
@@ -104,7 +104,7 @@ class Wave:
         form1, form2 = self._prepare_broadcast(other)
         self.form = form1 / (form2 + eps)
         return self
-    
+
     def __add__(self, other: Union['Wave', float, int]) -> 'Wave':
         """Addition."""
         form1, form2 = self._prepare_broadcast(other)
@@ -120,7 +120,7 @@ class Wave:
         form1, form2 = self._prepare_broadcast(other)
         self.form = form1 + form2
         return self
-    
+
     def __sub__(self, other: Union['Wave', float, int]) -> 'Wave':
         """Subtraction."""
         form1, form2 = self._prepare_broadcast(other)
@@ -136,7 +136,7 @@ class Wave:
         form1, form2 = self._prepare_broadcast(other)
         self.form = form1 - form2
         return self
-    
+
     def __str__(self) -> str:
         """Simple string representation."""
         return f"Wave of shape {self.form.shape}"
@@ -174,27 +174,27 @@ class Wave:
     @property
     def freqs(self) -> Tuple[np.ndarray, np.ndarray]:
         """Get 2D spatial frequency coordinates (fy, fx).
-        
+
         Works with both 2D and ND arrays, operating on last two dimensions.
         """
         if self.spacing is None:
             raise ValueError("Wave must have spacing defined")
-        
+
         # Get last two dimensions
         *batch_dims, ny, nx = self.form.shape
-        
+
         # Create base frequencies
         fx = np.fft.fftfreq(nx, d=self.spacing)
         fy = np.fft.fftfreq(ny, d=self.spacing)
-        
+
         # Create 2D meshgrid
         fy, fx = np.meshgrid(fy, fx, indexing='ij')
-        
+
         # Add batch dimensions if needed
         for _ in batch_dims:
             fy = fy[np.newaxis, ...]
             fx = fx[np.newaxis, ...]
-        
+
         return fy, fx
 
     @property
@@ -254,24 +254,24 @@ class Wave:
         self.form = rotate(self.form, angle, reshape=reshape, order=1)
         return self
 
-    def pad(self, pad_width: Union[int, Tuple, List], 
+    def pad(self, pad_width: Union[int, Tuple, List],
             mode: str = 'constant', constant_values: float = 0) -> 'Wave':
         """Pad wave with zeros or other values."""
         if isinstance(pad_width, (int, np.integer)):
             pad_width = [(pad_width, pad_width)] * self.ndim
         elif isinstance(pad_width, tuple) and len(pad_width) == 2:
             pad_width = [pad_width] * self.ndim
-        
+
         self.form = np.pad(self.form, pad_width, mode=mode, constant_values=constant_values)
         return self
-    
+
     @property
     def mean(self) -> np.ndarray:
         """Return mean along the first axis if ndim > 2."""
         if self.ndim <= 2:
             return self.form
         return np.mean(self.form, axis=0, keepdims=True)
-    
+
     def zeros_like(self) -> 'Wave':
         """Create a new wave with zeros and same properties as current wave."""
         return Wave(
@@ -280,7 +280,7 @@ class Wave:
             spacing=self.spacing,
             position=self.position
         )
-    
+
     def ones_like(self) -> 'Wave':
         """Create a new wave with ones and same properties as current wave."""
         return Wave(
@@ -308,16 +308,16 @@ class Wave:
         """Create multiple copies of the wave along first dimension."""
         # Remove first dimension if it's 1
         base_form = self.form[0] if self.form.shape[0] == 1 else self.form
-        
+
         # Create new form with n copies
         new_form = np.stack([base_form] * n)
-        
+
         # Handle position
         if self.position is not None:
             new_position = np.full(n, self.position)
         else:
             new_position = None
-        
+
         return Wave(
             form=new_form,  # Will be (n, ny, nx)
             energy=self.energy,
@@ -329,33 +329,33 @@ class Wave:
         """Crop or pad wave to match reference wave dimensions."""
         if self.spacing != reference.spacing:
             raise ValueError("Waves must have the same spacing")
-        
+
         result = self.copy()
-        
+
         # Get spatial dimensions (last two)
         *batch_dims, ny, nx = self.shape
         *ref_batch, ref_ny, ref_nx = reference.shape
-        
+
         # Calculate padding/cropping for each spatial dimension
         pad_y = max(0, (ref_ny - ny) // 2)
         pad_x = max(0, (ref_nx - nx) // 2)
-        
+
         # Pad if needed
         if pad_y > 0 or pad_x > 0:
             # No padding for batch dimensions
             pad_width = [(0, 0)] * (self.ndim - 2) + [(pad_y, pad_y), (pad_x, pad_x)]
             result.pad(pad_width, mode='constant', constant_values=pad_value)
-        
+
         # Calculate crop slices
         dy = (result.shape[-2] - ref_ny) // 2
         dx = (result.shape[-1] - ref_nx) // 2
-        
+
         # Create slices (keep batch dimensions unchanged)
         slices = (slice(None),) * (self.ndim - 2) + (
             slice(dy, dy + ref_ny),
             slice(dx, dx + ref_nx)
         )
-        
+
         result.crop(slices)
         return result
 

@@ -3,11 +3,12 @@
 from .core import *
 from .core.optimization import *
 from .core.pipeline import *
+from .core.uq import *
 
 __all__ = [
-    'Wave', 
-    'Propagate', 
-    'Modulate', 
+    'Wave',
+    'Propagate',
+    'Modulate',
     'Detect',
     'Broadcast',
     'GradientDescent',
@@ -15,5 +16,11 @@ __all__ = [
     'Pipeline',
     'Operator',
     'MultiDistanceHolography',
-    'CodedHolography'
-    ]
+    'CodedHolography',
+    'Covariance',
+    'SparseCovariance',
+    'DiagonalCovariance',
+    'SparseCovarianceLocalization',
+    'Noise',
+    'GaussianNoise',
+]

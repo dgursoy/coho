@@ -1796,6 +1796,20 @@ optional = ["PyWavelets (>=1.1.1)", "SimpleITK", "astropy (>=5.0)", "cloudpickle
 test = ["asv", "numpydoc (>=1.7)", "pooch (>=1.6.0)", "pytest (>=7.0)", "pytest-cov (>=2.11.0)", "pytest-doctestplus", "pytest-faulthandler", "pytest-localserver"]
 
 [[package]]
+name = "scikit-sparse"
+version = "0.4.15"
+description = "Scikit sparse matrix package"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "scikit_sparse-0.4.15.tar.gz", hash = "sha256:a0b1ef1bbe9e28e5c6d2838c63c62e094a8098d11a736771edac55ccc5f9eabe"},
+]
+
+[package.dependencies]
+numpy = ">=1.13.3"
+scipy = ">=0.19"
+
+[[package]]
 name = "scipy"
 version = "1.14.1"
 description = "Fundamental algorithms for scientific computing in Python"
@@ -2033,4 +2047,4 @@ numpy = "*"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "22fe9a6e9ff8c7403a88806b9430524dc8f9949e038c9bbcd6b68a10fed5598b"
+content-hash = "676f2880d8dcc360d3b6b8090b13ea1e0b6eafbade092858fb57a7c686375581"

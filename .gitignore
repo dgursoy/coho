@@ -7,6 +7,7 @@ __pycache__/
 *.so
 
 # Local scripts
+snippets/*
 test.*
 
 # Distribution / packaging

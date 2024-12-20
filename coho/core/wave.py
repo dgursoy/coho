@@ -15,7 +15,9 @@ class Wave:
         form: Complex wave field (ny, nx)
         energy: Photon energy in keV
         spacing: Pixel size in meters
-    
+        position: Position of the wave in meters
+        mode: Wave propagation mode ('parallel' or 'focused')
+
     Properties:
         shape: Wave field shape (ny, nx)
         ndim: Number of dimensions (should be 2)
@@ -23,23 +25,34 @@ class Wave:
         wavelength: Wavelength in meters
         wavenumber: Wave number in radians per meter
     """
-    # Instance attributes
+    # Dynamic field (will be traced)
     form: jnp.ndarray
-    energy: float
-    spacing: float
+    
+    # Static fields (won't be traced)
+    energy: float = 10.0
+    spacing: float = 1e-4
+    position: float = 0.0
+    mode: str = 'focused'
     
     # Physical constants
     HC: ClassVar[float] = 1.23984193e-6  # keV·m
     
-    def tree_flatten(self) -> Tuple[Tuple[jnp.ndarray], Tuple[float, float]]:
-        """Flatten the Wave into arrays and auxiliary data."""
-        return (self.form,), (self.energy, self.spacing)
+    def tree_flatten(self):
+        """Separate dynamic and static values."""
+        dynamic = (self.form,)
+        static = {
+            'energy': self.energy,
+            'spacing': self.spacing,
+            'position': self.position,
+            'mode': self.mode
+        }
+        return dynamic, static
     
     @classmethod
-    def tree_unflatten(cls, aux_data: Tuple[float, float], 
-                       arrays: Tuple[jnp.ndarray]) -> 'Wave':
+    def tree_unflatten(cls, static, dynamic):
         """Reconstruct Wave from flattened data."""
-        return cls(form=arrays[0], energy=aux_data[0], spacing=aux_data[1])
+        form, = dynamic
+        return cls(form=form, **static)
     
     @property
     def shape(self) -> Tuple[int, int]:
@@ -65,25 +78,27 @@ class Wave:
     def wavenumber(self) -> float:
         """Wave number in radians per meter."""
         return 2 * jnp.pi / self.wavelength
-
-    def __mul__(self, other: float) -> 'Wave':
-        """Multiply wave form by a scalar."""
-        return Wave(
-            form=self.form * other,
-            energy=self.energy,
-            spacing=self.spacing
-        )
     
-    def __rmul__(self, other: float) -> 'Wave':
-        """Right multiplication by a scalar."""
-        return self.__mul__(other)
+    def __add__(self, other: 'Wave') -> 'Wave':
+        """Add another wave's form."""
+        return Wave(
+            form=self.form + other.form,
+            energy=self.energy,
+            spacing=self.spacing,
+            position=self.position,
+            mode=self.mode,
+            divergence=self.divergence
+        )
     
     def __sub__(self, other: 'Wave') -> 'Wave':
         """Subtract another wave's form."""
         return Wave(
             form=self.form - other.form,
             energy=self.energy,  # Keep original energy
-            spacing=self.spacing  # Keep original spacing
+            spacing=self.spacing,  # Keep original spacing
+            position=self.position,
+            mode=self.mode,
+            divergence=self.divergence
         )
     
     def __neg__(self) -> 'Wave':
@@ -91,13 +106,23 @@ class Wave:
         return Wave(
             form=-self.form,
             energy=self.energy,
-            spacing=self.spacing
+            spacing=self.spacing,
+            position=self.position,
+            mode=self.mode,
+            divergence=self.divergence
+        )
+
+    def __mul__(self, other: float) -> 'Wave':
+        """Multiply wave form by a scalar."""
+        return Wave(
+            form=self.form * other,
+            energy=self.energy,
+            spacing=self.spacing,
+            position=self.position,
+            mode=self.mode,
+            divergence=self.divergence
         )
     
-    def __add__(self, other: 'Wave') -> 'Wave':
-        """Add another wave's form."""
-        return Wave(
-            form=self.form + other.form,
-            energy=self.energy,
-            spacing=self.spacing
-        )
+    def __rmul__(self, other: float) -> 'Wave':
+        """Right multiplication by a scalar."""
+        return self.__mul__(other)

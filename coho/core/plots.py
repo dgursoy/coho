@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import jax.numpy as jnp
 from .wave import Wave
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Dict
+from typing import List, Optional, Tuple, Dict, Union
 from .metrics import WaveMetrics
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -13,33 +13,55 @@ class WavePlotter:
     """Wave field plotting utilities."""
     
     @staticmethod
-    def plot_wave(wave: Wave) -> None:
-        """Plot wave field amplitude and phase.
+    def plot_waves(waves: Union[Wave, List[Wave]]) -> None:
+        """Plot wave field amplitudes and phases.
+        
+        Displays amplitude and phase for one or more wave fields. For multiple waves,
+        each wave is shown in a column with amplitude and phase stacked vertically.
         
         Args:
-            wave: Wave field with shape (ny, nx)
+            waves: Single Wave or list of Wave fields, each with shape (ny, nx)
+                  If a single Wave is provided, it will be treated as a list of length 1.
+        
+        Example:
+            # Plot single wave
+            WavePlotter.plot_waves(wave)
+            
+            # Plot multiple waves
+            WavePlotter.plot_waves([wave1, wave2])
         """
-        # Convert JAX arrays to NumPy for plotting
-        form_np = jnp.asarray(wave.form).copy()
+        # Convert input to list if single wave
+        if isinstance(waves, Wave):
+            waves = [waves]
+            
+        n_waves = len(waves)
         
-        # Create figure with two subplots
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 4))
-        
-        # Amplitude
-        amplitude = jnp.abs(form_np)
-        im_amp = ax1.imshow(amplitude, cmap='gray')
-        divider = make_axes_locatable(ax1)
-        cax1 = divider.append_axes("right", size="5%", pad=0.1)
-        fig.colorbar(im_amp, cax=cax1)
-        ax1.set_title('Amplitude')
-        
-        # Phase
-        phase = jnp.angle(form_np)
-        im_phase = ax2.imshow(phase, cmap='RdGy', vmin=-jnp.pi, vmax=jnp.pi)
-        divider = make_axes_locatable(ax2)
-        cax2 = divider.append_axes("right", size="5%", pad=0.1)
-        fig.colorbar(im_phase, cax=cax2)
-        ax2.set_title('Phase')
+        # Create figure with subplots arranged in columns
+        fig, axes = plt.subplots(2, n_waves, figsize=(4*n_waves, 8))
+        if n_waves == 1:
+            axes = axes.reshape(-1, 1)  # Make 2D for consistent indexing
+            
+        for i, wave in enumerate(waves):
+            # Convert JAX arrays to NumPy for plotting
+            form_np = jnp.asarray(wave.form).copy()
+            
+            # Amplitude
+            amplitude = jnp.abs(form_np)
+            # amplitude = jnp.real(form_np)
+            im_amp = axes[0,i].imshow(amplitude, cmap='gray')
+            divider = make_axes_locatable(axes[0,i])
+            cax1 = divider.append_axes("right", size="5%", pad=0.1)
+            fig.colorbar(im_amp, cax=cax1)
+            axes[0,i].set_title(f'Amplitude {i+1}')
+            
+            # Phase
+            phase = jnp.angle(form_np)
+            # phase = jnp.imag(form_np)
+            im_phase = axes[1,i].imshow(phase, cmap='twilight_shifted', vmin=-jnp.pi, vmax=jnp.pi)
+            divider = make_axes_locatable(axes[1,i])
+            cax2 = divider.append_axes("right", size="5%", pad=0.1)
+            fig.colorbar(im_phase, cax=cax2)
+            axes[1,i].set_title(f'Phase {i+1}')
         
         fig.tight_layout()
         plt.show()

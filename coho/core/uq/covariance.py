@@ -49,10 +49,13 @@ class Covariance(ABC):
 class SparseCovariance(Covariance):
     """Scipy-based sparse implementation of a covariance operator"""
 
-    def __init__(self, waveform_shape: Tuple[int, int],
-                 data: np.ndarray, coord: Tuple[np.ndarray, np.ndarray],
+    def __init__(self,
+                 waveform_shape: Tuple[int, int],
+                 data: np.ndarray,
+                 coord: Tuple[np.ndarray, np.ndarray],
                  dtype: Type = np.complex128,
-                 format: str = "csc", ):
+                 format: str = "csc",
+                 ):
         """
         Create a covariance operator where each image pixel is only correlated
         with neighboring pixels.
@@ -255,8 +258,7 @@ class SparseCovariance(Covariance):
             dtype=self.dtype,
         )
 
-    def cholesky(self, in_place : bool = False,
-                 lower : bool = True, ) -> 'SparseCovariance':
+    def cholesky(self, lower: bool = True, ) -> 'SparseCovariance':
         """
         Evaluate the Cholesky factor of the covariance matrix where
         :math:`A=LL*`.
@@ -265,70 +267,11 @@ class SparseCovariance(Covariance):
         or use alternative packages such as scikit-sparse.
         Here, I am following the former.
 
-        :param in_place: either overwrite the underlying of the covariance matrix
-            or return a copy.
         :param lower: if `True` return the lower Cholesky factor, otherwise
         return the upper factor.
             or return a copy.
         """
-        # Copy if needed
-        cov = self if in_place else self.copy()
-
-        # Sparse LU factorization
-        if sp_cholesky is not None:
-            factor = sp_cholesky(cov.covariance_array)
-            std = factor.L()
-            std @= std.conjugate().T
-            pass
-        else:
-            try:
-                LU = splinalg.splu(cov.covariance_array, diag_pivot_thresh=0, permc_spec="NATURAL")
-            except Exception as err:
-                print(
-                    f"Cholesky factorization failed!\n"
-                    f"Failed to use efficient LU factorization for sparse matrices; \n"
-                    f"Unexpected {err=} of {type(err)=}"
-                )
-                raise
-
-            else:
-                # Check the matrix is positive semi definite:
-                if any(LU.perm_r != np.arange(cov.size)) or any(
-                    LU.U.diagonal() < 0
-                ):
-                    # Compose error message and raise
-                    msg = f"Cholesky factorization failed!\n"
-                    msg += f"Failed to use efficient LU factorization for sparse matrices; \n"
-                    msg += f"{LU.perm_r=}; \n"
-                    msg += f"{LU.U.diagonal()=}; \n"
-                    msg += f"{any(LU.perm_r != np.arange(cov.size))=};\n"
-                    msg += f"{any(LU.U.diagonal() < 0)=}"
-                    raise TypeError(msg)
-
-                else:
-                    # Calculate the lower Cholesky factor
-                    std = LU.L @ (sp.diags(LU.U.diagonal() ** 0.5))
-
-                    # Transpose if upper factor is needed
-                    if not lower: std = std.T
-
-                    # Convert format if needed
-                    if std.format != cov.format:
-                        if cov.format == "csc":
-                            std = std.tocsc()
-                        elif cov.format == "csr":
-                            std = std.tocsc()
-                        elif cov.format == "coo":
-                            std = std.tocoo()
-                        else:
-                            raise TypeError(
-                                f"Unexpected format of the covariance {cov.format=}"
-                            )
-
-        # Apply the factorization
-        cov._COVARIANCE_ARRAY = std
-
-        return cov
+        return cholesky(self, lower=lower)
 
     def __repr__(self) -> str:
         """String representation of the covariance operator."""
@@ -718,4 +661,92 @@ class SparseCovarianceLocalization(SparseCovariance):
     @property
     def localization_function(self):
         return self._LOCALIZATION_FUNCTION
+
+
+
+
+## Helper functions
+def cholesky(cov : Union[SparseCovariance, sp.sparray],
+             lower : bool = True, ) -> Union[SparseCovariance, sp.sparray]:
+    """
+    Evaluate the Cholesky factor of the covariance matrix where
+    :math:`A=LL*`.
+    Since scipy.sparse.linalg does not provide Cholesky factorization for
+    positive semi definite matrices, we wither have to rely on LU decomposition,
+    or use alternative packages such as scikit-sparse.
+    Here we check if `scikit-sparse` is implemented, and if se we use it. Otherwise,
+    we fall back to super LU decomposition.
+
+    :param cov: the covariance object to factorize
+    :param lower: if `True` return the lower Cholesky factor, otherwise
+        return the upper factor.
+    """
+    # Copy if needed
+    if isinstance(cov, Covariance):
+        cov_np = cov.covariance_array
+    elif sp.issparse(cov):
+        cov_np = cov
+    else:
+        raise TypeError(
+            f"Unsupported {type(cov)=}; expected Covariance or scipy sparse array"
+        )
+
+    # Sparse LU factorization
+    if sp_cholesky is not None:
+        factor = sp_cholesky(cov_np)
+        std = factor.L()
+        std @= std.conjugate().T
+
+    else:
+        try:
+            LU = splinalg.splu(cov_np, diag_pivot_thresh=0, permc_spec="NATURAL")
+        except Exception as err:
+            print(
+                f"Cholesky factorization failed!\n"
+                f"Failed to use efficient LU factorization for sparse matrices; \n"
+                f"Unexpected {err=} of {type(err)=}"
+            )
+            raise
+
+        else:
+            # Check the matrix is positive semi definite:
+            if any(LU.perm_r != np.arange(cov_np.shape[0])) or any(
+                LU.U.diagonal() < 0
+            ):
+                # Compose error message and raise
+                msg = f"Cholesky factorization failed!\n"
+                msg += f"Failed to use efficient LU factorization for sparse matrices; \n"
+                msg += f"{LU.perm_r=}; \n"
+                msg += f"{LU.U.diagonal()=}; \n"
+                msg += f"{any(LU.perm_r != np.arange(cov_np.shape[0]))=};\n"
+                msg += f"{any(LU.U.diagonal() < 0)=}"
+                raise TypeError(msg)
+
+            else:
+                # Calculate the lower Cholesky factor
+                std = LU.L @ (sp.diags(LU.U.diagonal() ** 0.5))
+
+                # Transpose if upper factor is needed
+                if not lower: std = std.T
+
+    # Convert format if needed
+    if std.format != cov.format:
+        if cov.format == "csc":
+            std = std.tocsc()
+        elif cov.format == "csr":
+            std = std.tocsc()
+        elif cov.format == "coo":
+            std = std.tocoo()
+        else:
+            raise TypeError(
+                f"Unexpected format of the covariance {cov.format=}"
+            )
+    if isinstance(cov, Covariance):
+        _std = cov.copy()
+        _std.covariance_array = std
+        std = _std
+    else:
+        pass
+
+    return std
 

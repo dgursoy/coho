@@ -59,8 +59,10 @@ def create_plots_from_Gaussian(gm, sample_size=30, saveto=None, return_fig=False
 
     ## Samples: sample (sample_size), plot the first three, and calculat the average
     average = None
+    # print("\n******\n", gm.mean.form, "\n******\n")
     for j in range(sample_size):
         sample = gm.sample()
+        # print("Sample {j+1}/{sample_size}: ", sample.form)
         if j == 0:
             ax = axes[1, 0]
             im = ax.imshow(sample.amplitude[0], cmap='gray')
@@ -100,17 +102,18 @@ def create_plots_from_Gaussian(gm, sample_size=30, saveto=None, return_fig=False
     ax.set_title('Sample Average (Phase)')
     plt.colorbar(im, ax=ax)
 
-
     # Plot Errors (mean-average)
     err = gm.mean - average
     # Amplitude
     ax = axes[2, 2]
-    im = ax.imshow(err.amplitude[0], cmap='gray')
+    # im = ax.imshow(err.amplitude[0], cmap='gray')
+    im = ax.imshow(gm.mean.amplitude[0]-average.amplitude[0], cmap='gray')
     ax.set_title('Error (Amplitude)')
     plt.colorbar(im, ax=ax)
     # Phase
     ax = axes[2, 3]
-    im = ax.imshow(err.phase[0], cmap='gray')
+    # im = ax.imshow(err.phase[0], cmap='gray')
+    im = ax.imshow(gm.mean.phase[0]-average.phase[0], cmap='gray')
     ax.set_title('Error (Phase)')
     plt.colorbar(im, ax=ax)
 
@@ -130,6 +133,16 @@ def create_plots_from_Gaussian(gm, sample_size=30, saveto=None, return_fig=False
 
 
 if __name__ == "__main__":
+    ########################################################################
+    ## TEST LOGIC
+    #############
+    # 1- Model a complex-valued Gaussian distribution using
+    #    (modeling complex-valued wave) using full variance/relation structure
+    # 2- ......
+    #
+    #
+    ########################################################################
+
     # Load test images and normalize
     lena = np.load('./coho/resources/images/lena.npy') / 255.
     cameraman = np.load('./coho/resources/images/cameraman.npy') / 255.
@@ -138,9 +151,10 @@ if __name__ == "__main__":
 
     # Settings
     random_seed = 1011
-    sample_size = 50
-    noise_stdev_real = 0.2  # standard deviaiton of the real part
-    noise_stdev_imag = 0.1   # standard deviaiton of the imaginary part
+    sample_size = 10
+    sample_shift = 0.5
+    noise_level = 0.10      # fraction ([0, 1]) of the magitude of the pixel with highest value
+    real_imag_split = 0.8  # this mutlplies reference image to get real component; remaining from 1 gives imaginary
     neighborhood_size = 1  # NOTE: Make more to increase neighborhood size
     plot_format = "png"
     cropsize = 512  # Make less than 512 (full size) Just to make things faster...
@@ -148,44 +162,45 @@ if __name__ == "__main__":
     # Create a random number generator (rng)
     rng = np.random.default_rng(random_seed)
 
+
+    ## Choose true image
+    reference_image = cameraman
+
+    ## Create reference sample (complex-valued) from reference image
+    # Random signs to have positive and negative signs in the complex signal
+    if True:
+        reference_sample = (cameraman * np.exp(ship * 0.5j))[:cropsize, :cropsize]  # original composite
+    else:
+        random_signs = rng.choice((1, -1), size=reference_image.size).reshape(reference_image.shape)
+        reference_sample = reference_image * real_imag_split + 1j * (1-real_imag_split) * random_signs * reference_image
+        reference_sample = reference_sample[: cropsize, :cropsize]  # crop image (if needed)
+
+
+    # Noise levels (standarde deviations) & correlations
+    noise_stdev_real = noise_level * np.abs(reference_sample.real).max() + 0.1
+    noise_stdev_imag = noise_level * np.abs(reference_sample.imag).max() + 0.1
+    real_imag_correlation = np.corrcoef(reference_sample.real.ravel(), reference_sample.imag.ravel())[0, 1]
+
+    # # Variances and covariances
+    noise_variance_real  = noise_stdev_real**2
+    noise_variance_imag  = noise_stdev_imag**2
+    real_imag_covariance = real_imag_correlation * noise_stdev_real * noise_stdev_imag
+
     # Initialize sample (complex valued) and extract wave form
     sample = Wave(
-        (cameraman * np.exp(ship * 1j))[:cropsize, :cropsize],
+        reference_sample,
         energy=10.0,
         spacing=1e-4,
         position=0.0
     ).normalize()
-    sample += 0.5
-
-    #
-    ########################################################
-    ##    Create multiple Gaussian distributions with     ##
-    ##    the same mean and with different covariances    ##
-    ########################################################
+    sample += sample_shift
 
     ####################
-    # 1- Diagonal covariance with variances of real and imaginary parts beign equal
-    ####################
-    # Create covariance operator with random variances [0, 1]
-    nx, ny = sample.shape[1: ]
-    covariance = DiagonalCovariance(
-        waveform_shape=(nx, ny),
-        data=(noise_stdev_real**2+noise_stdev_imag**2),
-    )
-
-    ####################
-    ## NOTE: The tests below show that all versions of Gaussian model
-    # Can sample well and they are implemented properly.
-    # Though, their capabilities to model complex Gaussian models
-    #   is yet to be tested.
-    # IDEA:
-    ####################
-
-    ####################
+    # Full covariance/relation matrices
     # Create Tridiagonal covariances (real-real, imaginary-imaginary, real-imaginary)
     ####################
     # Localization array that defines covariances between pixels and neighbors
-    covariance = SparseCovarianceLocalization(
+    covariance_localization = SparseCovarianceLocalization(
         step_size=neighborhood_size,
         waveform_shape=sample.shape[-2: ],
         localization_function=lambda d: np.exp(-d),
@@ -193,13 +208,10 @@ if __name__ == "__main__":
 
     # Now, use the structure above to create covariances (and pseudo-covariances) as needed
     Cov, PCov = real_to_complex_covariances(
-        C_RR= covariance * (noise_stdev_real**2),
-        C_II= covariance * (noise_stdev_imag**2),
-        C_RI= covariance * 0.5 * (noise_stdev_real * noise_stdev_imag),
+        C_RR=covariance_localization*noise_variance_real,
+        C_II=covariance_localization*noise_variance_imag,
+        C_RI=covariance_localization*real_imag_covariance,
     )
-
-    # Cleanup
-    del covariance
 
     # Create Covariance matrix (Cov) and pseudo covariance matrix (PCov)
     Cov = SparseCovariance(
@@ -213,38 +225,56 @@ if __name__ == "__main__":
         coord=PCov.nonzero(),
     )
 
+    # Finally mean (shift back):
+    mean = sample
+
+    # Cleanup
+    del covariance_localization
+    ####################
+
+    #
+    ########################################################
+    ##    Create multiple Gaussian distributions with     ##
+    ##    the same mean and with different covariances    ##
+    ########################################################
+
     ##
     # Multiple versions of the Gaussian Noise Model
     ##
 
-    # 1- Gaussian Model (No Pseudo covariances) and create plots
+    # 1- Gaussian Model (Diagonal Covariance with No Pseudo covariances)
+    # -------------------------------------------------------------------
     gm = GaussianNoise(
-        mean=sample,
-        covariance=DiagonalCovariance(waveform_shape=sample.shape[-2: ], data=Cov.covariance_array.diagonal()),
+        mean=mean,
+        covariance=DiagonalCovariance(
+            waveform_shape=sample.shape[-2: ],
+            data=Cov.covariance_array.diagonal(),
+        ),
         random_seed=random_seed,
     )
     create_plots_from_Gaussian(
         gm,
         sample_size=sample_size,
-        saveto=f"GaussianNoise_NoisePlots_DiagonalCov_OnlyCovariance_SampleSize_{sample_size}.{plot_format}"
+        saveto=f"_PLOTS/GaussianNoise_NoisePlots_DiagonalCov_OnlyCovariance_SampleSize_{sample_size}.{plot_format}"
     )
 
-    # Create Gaussian Model (Ignore pseudo covariance) and create plots
+    # 2- Gaussian Model with correlations (Ignore pseudo covariance) and create plots
+    # -------------------------------------------------------------------
     gm = GaussianNoise(
-        mean=sample,
+        mean=mean,
         covariance=Cov,
         random_seed=random_seed,
     )
     create_plots_from_Gaussian(
         gm,
         sample_size=sample_size,
-        saveto=f"GaussianNoise_NoisePlots_TriDiagonalCov_OnlyCovariance_Neighborhood_{neighborhood_size}_SampleSize_{sample_size}.{plot_format}"
+        saveto=f"_PLOTS/GaussianNoise_NoisePlots_TriDiagonalCov_OnlyCovariance_Neighborhood_{neighborhood_size}_SampleSize_{sample_size}.{plot_format}"
     )
-    ####################
 
-    # Create Gaussian Model and create plots
+    # 3- Gaussian Model with correlations (Ignore pseudo covariance) and create plots
+    # -------------------------------------------------------------------
     gm = ComplexGaussianNoise(
-        mean=sample,
+        mean=mean,
         covariance=Cov,
         pseudo_covariance=PCov,
         random_seed=random_seed,
@@ -252,20 +282,26 @@ if __name__ == "__main__":
     create_plots_from_Gaussian(
         gm,
         sample_size=sample_size,
-        saveto=f"ComplexGaussianNoise_NoisePlots_TriDiagonalCov_WithPseudoCovariance_Neighborhood_{neighborhood_size}_SampleSize_{sample_size}.{plot_format}"
+        saveto=f"_PLOTS/ComplexGaussianNoise_NoisePlots_TriDiagonalCov_TriDiagonalPseudoCov_Neighborhood_{neighborhood_size}_SampleSize_{sample_size}.{plot_format}"
     )
 
     # Create Gaussian Model and create plots
     gm = ComplexGaussianNoise(
-        mean=sample,
-        covariance=DiagonalCovariance(waveform_shape=sample.shape[-2: ], data=Cov.covariance_array.diagonal()),
-        pseudo_covariance=DiagonalCovariance(waveform_shape=sample.shape[-2: ], data=PCov.covariance_array.diagonal()),
+        mean=mean,
+        covariance=DiagonalCovariance(
+            waveform_shape=sample.shape[-2: ],
+            data=Cov.covariance_array.diagonal(),
+        ),
+        pseudo_covariance=DiagonalCovariance(
+            waveform_shape=sample.shape[-2: ],
+            data=PCov.covariance_array.diagonal(),
+        ),
         random_seed=random_seed,
     )
     create_plots_from_Gaussian(
         gm,
         sample_size=sample_size,
-        saveto=f"ComplexGaussianNoise_NoisePlots_TriDiagonalCovDigonalized_WithPseudoCovariance_Neighborhood_{neighborhood_size}_SampleSize_{sample_size}.{plot_format}"
+        saveto=f"_PLOTS/ComplexGaussianNoise_NoisePlots_DiagonalCov_DiagonalPseudoCov_SampleSize_{sample_size}.{plot_format}"
     )
 
 

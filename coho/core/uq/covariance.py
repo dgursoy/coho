@@ -23,6 +23,7 @@ from ..component import Wave
 
 __all__ = [
     'Covariance',
+    'DenseCovariance',
     'SparseCovariance',
     'SparseCovarianceLocalization',
     'DiagonalCovariance',
@@ -33,9 +34,9 @@ class Covariance(ABC):
     """Base class for Covariance Operators"""
 
     @abstractmethod
-    def apply(self, wave: Wave | np.ndarray) -> Wave | np.ndarray:
+    def apply(self, wave: Union[Wave, np.ndarray]) -> Union[Wave, np.ndarray]:
         """
-        Appy a covariance operator (matrix-vector product) to 2d array or
+        Appy a covariance operator (matrix-vector product) to 1d or 2d array or
         a wave form.
         The return type is the same as the input type.
 
@@ -50,7 +51,7 @@ class SparseCovariance(Covariance):
     """Scipy-based sparse implementation of a covariance operator"""
 
     def __init__(self,
-                 waveform_shape: Tuple[int, int],
+                 waveform_shape: Union[Tuple[int, int], Tuple[int, int, int]] ,
                  data: np.ndarray,
                  coord: Tuple[np.ndarray, np.ndarray],
                  dtype: Type = np.complex128,
@@ -60,7 +61,7 @@ class SparseCovariance(Covariance):
         Create a covariance operator where each image pixel is only correlated
         with neighboring pixels.
 
-        :param waveform_shape: wave form shape (nx, ny)
+        :param waveform_shape: wave form shape (nx, ny) or (nt, nx, ny)
         :param data: 1d data array holding nonzero elements.
         :param coord: coordinates `(row, col)` to be filled with with `data`.
         :param dtype: data type of the stored covariances data
@@ -78,14 +79,22 @@ class SparseCovariance(Covariance):
             since their interface might be a little different.
         """
         # Check dimensionality and data types
-        nx, ny = waveform_shape
+        if len(waveform_shape) == 2:
+            nt = 1
+            nx, ny = waveform_shape
+        elif len(waveform_shape) == 3:
+            nt, nx, ny = waveform_shape
+
         assert int(nx)==nx and nx>0 and int(ny)==ny and ny>0, \
             f"Unexpected shape {waveform_shape=} of {type(waveform_shape)=}"
-        size = nx * ny
+        assert int(nt)==nt and nt>=0, \
+            f"Unexpected shape {waveform_shape=} of {type(waveform_shape)=}"
         assert isinstance(data, np.ndarray), f"Expected np.ndarray; received {type(data)=}"
-        assert isinstance(coord, (tuple, np.ndarray)), f"Expected tuple (or np.ndarray for dia); received {type(coord)=}"
+        assert isinstance(coord, (tuple, np.ndarray)), \
+            f"Expected tuple (or np.ndarray for dia); received {type(coord)=}"
 
         # Create the *sparse* covariance array based on the passed format
+        size = nx * ny  # Space dimension (number of pixesl)
         sparse_generator = self._map_format_to_sparse_generator(format)
         self._COVARIANCE_ARRAY = sparse_generator(
             (data, coord),
@@ -94,7 +103,7 @@ class SparseCovariance(Covariance):
         )
 
         # Save waveform shape (image dimensions nx, ny)
-        self._WAVEFORM_SHAPE = waveform_shape
+        self._WAVEFORM_SHAPE = (nt, nx, ny)
         ## Initialization done...
 
     def _map_format_to_sparse_generator(self, format):
@@ -150,13 +159,18 @@ class SparseCovariance(Covariance):
                 f"Expected Wave or 2D array. Received {wave=} of {type(wave)=}"
             )
 
-        if form.shape == self.waveform_shape:
+        if np.ndim(form) == 1 and form.size==self.size:
+            # Write in place matrix-vector product
+            form[:] = self.covariance_array @ form
+
+        elif form.shape == self.waveform_shape[-2: ]:
+
             # Write in place matrix-vector product
             form[...] = (
                 self.covariance_array @ form.ravel()
             ).reshape(form.shape)
 
-        elif len(form.shape) == 3 and form.shape[1: ] == self.waveform_shape:
+        elif len(form.shape) == 3 and form.shape[-2: ]==self.waveform_shape[-2: ]:
             for j in range(form.shape[0]):
                 form[j, ...] = (
                 self.covariance_array @ form[j, ...].ravel()
@@ -188,7 +202,7 @@ class SparseCovariance(Covariance):
         Dimension of the probability space.
         This is the total number of pixels in an image (waveform)
         """
-        nx, ny = self.waveform_shape
+        nx, ny = self.waveform_shape[-2: ]
         return nx * ny
 
     def nonzero(self):
@@ -340,6 +354,33 @@ class SparseCovariance(Covariance):
             raise TypeError(
                 f"Expected scalar, numpy/scipy array, or SparseCovariance isntance; received {type(other)}"
             )
+
+    def __imatmul__(self, other: Union['SparseCovariance', float, int, complex]) -> 'SparseCovariance':
+        """In-place matrix multiplication."""
+        if isinstance(other, Number):
+            self.covariance_array.data *= other
+
+        elif type(other) is type(self):
+
+            if self.shape !=other.shape:
+                raise TypeError(
+                    f"Inconsistent shapes {self.shape} != {other.shape}"
+                )
+            if self.waveform_shape != other.waveform_shape:
+                warnings.warn(
+                    f"Pointwise multiplication of two covariances associated with waveforms of different shapes."
+                )
+
+            # In place multiplication of underlying covariance array
+            self.covariance_array @= other.covariance_array
+
+        else:
+            raise TypeError(
+                f"Expected scalar or SparseCovariance isntance; received {type(other)}"
+            )
+
+        return self
+
 
     def __mul__(self, other: Union['SparseCovariance', float, int, complex]) -> 'SparseCovariance':
         """Pointwise (left) multiplication of covariance operators; self * other """
@@ -515,6 +556,493 @@ class SparseCovariance(Covariance):
         return self
 
 
+class DenseCovariance(Covariance):
+    """
+    This is very similar to :py:class:`SparseCovariance`
+    except that all matrices are dense numpy arrays.
+    This is useful for local analysis where only local Gaussian models
+    are used to model locally connected pixels.
+    """
+
+    def __init__(self,
+                 waveform_shape: Tuple[int, int],
+                 covariance: np.ndarray,
+                 dtype: Type = np.complex128,
+                 ):
+        """
+        Create a covariance operator where all pixels
+        are correlated with all other pixels.
+
+        :param waveform_shape: wave form shape (nx, ny)
+        :param covariance: a two dimensional array holding covariances
+            between all pixels. Entries assume C-type (row-wise) raveling
+            of the pixels of a wave to construct a random variable realization
+            that corresponds to rows/columns of this covariance matrix/array.
+        :param dtype: data type of the stored covariances data
+
+        .. note::
+            If the covariance matrix data type is not complex128, it is cast
+            into this type.
+        """
+        # Check dimensionality and data types
+        nx, ny = waveform_shape[-2: ]
+        assert int(nx)==nx and nx>0 and int(ny)==ny and ny>0, \
+            f"Unexpected shape {waveform_shape=} of {type(waveform_shape)=}"
+        size = nx * ny
+
+        if isinstance(covariance, Number) and size == 1:
+            covariance = np.array([[covariance]], dtype=dtype)
+
+        if not isinstance(covariance, np.ndarray):
+            raise TypeError(
+                f"covariance must be two dimensional numpy array "
+                f"received {type(covariance)=}"
+            )
+
+        if not (
+            np.ndim(covariance) == 2 and
+            np.size(covariance, 0) == np.size(covariance, 1) == size
+        ):
+            raise TypeError(
+                f"Expected two-dimensional array of shape ({size}, {size}); "
+                f"where the dimension is the total number of pixels in the waveform."
+                f"Waveform total number of pixels is {(waveform_shape[0]*waveform_shape[1])=}"
+                f"received {type(covariance)=}; {covariance.shape=}"
+            )
+
+        # Check data type
+        if covariance.dtype == dtype:
+            covariance = covariance.astype(dtype)
+
+        # Associate with self
+        self._COVARIANCE_ARRAY = covariance
+
+        # Save waveform shape (image dimensions nx, ny)
+        self._WAVEFORM_SHAPE = waveform_shape
+        ## Initialization done...
+
+    def apply(self, wave: Wave | np.ndarray, in_place:bool=True, ) -> Wave | np.ndarray:
+        """
+        Appy a covariance operator (matrix-vector product) to 2d array or
+        a wave form.
+
+        :param wave: the wave (or waveform/image) to apply the covariance operator to.
+            The shape of the waveform is either 2D or 3D.
+            If it is 2D, the shape must be equal to the registered `waveform_shape`.
+            If it is 3D, the shape must by `(n, nx, ny)` where `(nx, ny)`
+            is the registered `waveform_shape`.is the method method first axis is expected
+        :param in_place: either overwrite the passed object, or return a copy
+            holding the results
+        """
+        # Create a copy if not `in_place`
+        wave = wave if in_place else wave.copy()
+
+        # Extract a reference to the waveform (numpy array) to work with
+        if isinstance(wave, np.ndarray):
+            form = wave
+        elif isinstance(wave, Wave):
+            form = wave.form
+        else:
+            raise TypeError(
+                f"Expected Wave or 2D array. Received {wave=} of {type(wave)=}"
+            )
+
+        if np.ndim(form) == 1 and form.size==self.size:
+            # Write in place matrix-vector product
+            form[:] = self.covariance_array @ form
+
+        elif form.shape == self.waveform_shape[-2: ]:
+            # Write in place matrix-vector product
+            form[...] = (
+                self.covariance_array @ form.ravel()
+            ).reshape(form.shape)
+
+        elif len(form.shape) == 3 and form.shape[-2: ]==self.waveform_shape[-2: ]:
+            for j in range(form.shape[0]):
+                form[j, ...] = (
+                self.covariance_array @ form[j, ...].ravel()
+            ).reshape(form.shape)
+
+        else:
+            raise TypeError(
+                f"Invalid wave front shape {form.shape}; "
+                f"expected ({self.waveform_shape}) or "
+                f"(n, {self.waveform_shape[0], self.waveform_shape[1]}) "
+                f"for some positive integer n"
+            )
+
+        return wave
+
+    @property
+    def shape(self):
+        """Shape of the covariance matrix"""
+        return (self.size, self.size)
+
+    @property
+    def waveform_shape(self):
+        """Shape of the waveform (image dimensions nx x ny ) """
+        return self._WAVEFORM_SHAPE
+
+    @property
+    def size(self):
+        """
+        Dimension of the probability space.
+        This is the total number of pixels in an image (waveform)
+        """
+        nx, ny = self.waveform_shape[-2: ]
+        return nx * ny
+
+    @property
+    def dtype(self):
+        """
+        Data type of entris of the covariance matrix.
+        """
+        return self.covariance_array.dtype
+
+    @property
+    def covariance_array(self):
+        """Reference to the sparse covariance array/matrix."""
+        return self._COVARIANCE_ARRAY
+    @covariance_array.setter
+    def covariance_array(self, val):
+        """
+        Update the sparse covariance array/matrix (without altering its data type).
+        """
+        assert isinstance(val, np.ndarray) and val.shape == self.shape, f"Invalid {val=} of {type(val)=}"
+        self._COVARIANCE_ARRAY = val
+
+    def __str__(self) -> str:
+        """Simple string representation."""
+        return (
+            f"Dense (Numpy-Based) covariance matrix/kernel "
+            f"'DenseCovariance' of shape {self.shape} "
+            f"for waveform of shape {self.waveform_shape}"
+        )
+
+    def copy(self) -> 'SparseCovariance':
+        """Create a copy of the SparseCovariance operator with same properties and data."""
+        return DenseCovariance(
+            waveform_shape=self.waveform_shape,
+            covariance=self.covariance_array,
+            dtype=self.dtype,
+        )
+
+    def cholesky(self, lower: bool = True, ) -> 'SparseCovariance':
+        """
+        Evaluate the Cholesky factor of the covariance matrix where
+        :math:`A=LL*`.
+        Since scipy.sparse.linalg does not provide Cholesky factorization for
+        positive semi definite matrices, we wither have to rely on LU decomposition,
+        or use alternative packages such as scikit-sparse.
+        Here, I am following the former.
+
+        :param lower: if `True` return the lower Cholesky factor, otherwise
+        return the upper factor.
+            or return a copy.
+        """
+        return cholesky(self, lower=lower)
+
+    def __repr__(self) -> str:
+        """String representation of the covariance operator."""
+        return (f"DenseCovariance"
+            f"waveform_shape={self.waveform_shape!r}, "
+            f"dtype={self.covariance_array.dtype!r}, "
+            f"with data stored as {repr(self.covariance_array)!r})"
+        )
+
+    def __matmul__(self, other: Union['SparseCovariance', 'DenseCovariance', float, int, complex, np.ndarray, sp.sparray]) -> 'DenseCovariance':
+        """Matrix (left) multiplication of covariance operators; self @ other """
+        if isinstance(other, Number):
+            # Left multiplication (self @ other) where other is a number
+            cov = self.covariance_array * other
+            return DenseCovariance(
+                waveform_shape=self.waveform_shape,
+                covariance=cov,
+                dtype=cov.dtype,
+            )
+
+        elif isinstance(other, (DenseCovariance, SparseCovariance)):
+            if self.shape[1] !=other.shape[0]:
+                raise TypeError(
+                    f"Inconsistent shapes {self.shape} != {other.shape}"
+                )
+            if not (self.waveform_shape == other.waveform_shape or self.waveform_shape[::-1] == other.waveform_shape):
+                warnings.warn(
+                    f"multiplication of covariances associated with waveforms of different shapes might be unpredictible."
+                )
+            cov = self.covariance_array @ other.covariance_array
+            return DenseCovariance(
+                waveform_shape=self.waveform_shape,
+                covariance=cov,
+                dtype=cov.dtype,
+            )
+
+        elif isinstance(other, np.ndarray) or sp.issparse(other):
+            return self.covariance_array @ other
+
+        else:
+            raise TypeError(
+                f"Expected scalar, numpy/scipy array, or "
+                f"DenseCovariance/SparseCovariance isntance; "
+                f"received {type(other)}"
+            )
+
+    def __rmatmul__(self, other: Union['DenseeCovariance', 'SparseCovariance', Number, np.ndarray, sp.sparray]) -> 'DenseeCovariance':
+        """Matrix (right) multiplication of covariance operators; other @ self """
+        if isinstance(other, Number):
+            # Left multiplication (self @ other) where other is a number
+            cov = self.covariance_array * other
+            return DenseCovariance(
+                waveform_shape=self.waveform_shape,
+                covariance=cov,
+                dtype=cov.dtype,
+            )
+
+        elif isinstance(other, (DenseCovariance, SparseCovariance)):
+            return other.__matmul__(self)
+
+        elif isinstance(other, np.ndarray) or sp.issparse(other):
+            return other @ self.covariance_array
+
+        else:
+            raise TypeError(
+                f"Expected scalar, numpy/scipy array, or "
+                f"DenseCovariance/SparseCovariance isntance; "
+                f"received {type(other)}"
+            )
+
+    def __imatmul__(self, other: Union['DenseCovariance', 'SparseCovariance', float, int, complex]) -> 'DenseCovariance':
+        """In-place matrix multiplication."""
+        if isinstance(other, Number):
+            self._COVARIANCE_ARRAY *= other
+
+        elif isinstance(other, (DenseCovariance, SparseCovariance)):
+
+            if self.shape !=other.shape:
+                raise TypeError(
+                    f"Inconsistent shapes {self.shape} != {other.shape}"
+                )
+            if self.waveform_shape != other.waveform_shape:
+                warnings.warn(
+                    f"Pointwise multiplication of two covariances associated with waveforms of different shapes."
+                )
+
+            # In place multiplication of underlying covariance array
+            self.covariance_array @= other.covariance_array
+
+        else:
+            raise TypeError(
+                f"Expected scalar, numpy/scipy array, or "
+                f"DenseCovariance/SparseCovariance isntance; "
+                f"received {type(other)}"
+            )
+
+        return self
+
+    def __mul__(self, other: Union['DenseCovariance', 'SparseCovariance', float, int, complex]) -> 'DenseCovariance':
+        """Pointwise (left) multiplication of covariance operators; self * other """
+
+        if isinstance(other, Number):
+            cov = self.covariance_array * other
+            # Left multiplication (self * other) where other is a number
+            return DenseCovariance(
+                waveform_shape=self.waveform_shape,
+                covariance=cov,
+                dtype=cov.dtype,
+            )
+
+        elif isinstance(other, (DenseCovariance, SparseCovariance)):
+            if self.shape !=other.shape:
+                raise TypeError(
+                    f"Inconsistent shapes {self.shape} != {other.shape}"
+                )
+            if self.waveform_shape != other.waveform_shape:
+                warnings.warn(
+                    f"Pointwise multiplication of two covariances associated with waveforms of different shapes."
+                )
+            if isinstance(other, DenseCovariance):
+                cov = self.covariance_array * other.covariance_array
+            else:
+                cov = self.covariance_array * other.covariance_array.toarray()
+
+            return DenseCovariance(
+                waveform_shape=self.waveform_shape,
+                covariance=cov,
+                dtype=cov.dtype,
+            )
+
+        else:
+            raise TypeError(
+                f"Expected scalar, numpy/scipy array, or "
+                f"DenseCovariance/SparseCovariance isntance; "
+                f"received {type(other)}"
+            )
+
+    def __rmul__(self, other: Union['DenseCovariance', 'SparseCovariance', float, int, complex]) -> 'DenseCovariance':
+        """Pointwise (right) multiplication of covariance operators; other * self """
+        return self.__mul__(other)
+
+    def __imul__(self, other: Union['DenseCovariance', 'SparseCovariance', float, int, complex]) -> 'DenseCovariance':
+        """In-place pointwise multiplication."""
+        if isinstance(other, Number):
+            self._COVARIANCE_ARRAY *= other
+
+        elif isinstance(other, (DenseCovariance, SparseCovariance)):
+
+            if self.shape !=other.shape:
+                raise TypeError(
+                    f"Inconsistent shapes {self.shape} != {other.shape}"
+                )
+            if self.waveform_shape != other.waveform_shape:
+                warnings.warn(
+                    f"Pointwise multiplication of two covariances associated with waveforms of different shapes."
+                )
+
+            # In place multiplication of underlying covariance array
+            if isinstance(other, DenseCovariance):
+                self.covariance_array *= other.covariance_array
+
+            else:
+                self.covariance_array *= other.covariance_array.toarray()
+
+        else:
+            raise TypeError(
+                f"Expected scalar, numpy/scipy array, or "
+                f"DenseCovariance/SparseCovariance isntance; "
+                f"received {type(other)}"
+            )
+
+        return self
+
+    def __add__(self, other: Union['SparseCovariance', float, int, complex]) -> 'SparseCovariance':
+        """Left addition of covariance operator with other covariance operator or with scalar; self + other """
+
+        if isinstance(other, Number):
+            cov = self.covariance_array + other
+            return DenseCovariance(
+                waveform_shape=self.waveform_shape,
+                covariance=cov,
+                dtype=cov.dtype,
+            )
+
+        elif isinstance(other, (DenseCovariance, SparseCovariance)):
+            if self.shape !=other.shape:
+                raise TypeError(
+                    f"Inconsistent shapes {self.shape} != {other.shape}"
+                )
+            if self.waveform_shape != other.waveform_shape:
+                warnings.warn(
+                    f"Addition of two covariances associated with waveforms of different shapes."
+                )
+
+            cov = self.covariance_array + other.covariance_array
+            return DenseCovariance(
+                waveform_shape=self.waveform_shape,
+                covariance=cov,
+                dtype=cov.dtype,
+            )
+
+        else:
+            raise TypeError(
+                f"Expected scalar, numpy/scipy array, or "
+                f"DenseCovariance/SparseCovariance isntance; "
+                f"received {type(other)}"
+            )
+
+
+    def __radd__(self, other: Union['DenseCovariance', 'SparseCovariance', float, int, complex]) -> 'DenseCovariance':
+        """Right addition of covariance operator with other covariance operator or with scalar; other + self"""
+        return self.__add__(other)
+
+    def __iadd__(self, other: Union['DenseCovariance', 'SparseCovariance', float, int, complex]) -> 'DenseCovariance':
+        """In-place addition."""
+        if isinstance(other, Number):
+            self.covariance_array += other
+
+        elif isinstance(other, (DenseCovariance, SparseCovariance)):
+            if self.shape !=other.shape:
+                raise TypeError(
+                    f"Inconsistent shapes {self.shape} != {other.shape}"
+                )
+            if self.waveform_shape != other.waveform_shape:
+                warnings.warn(
+                    f"Addition of two covariances associated with waveforms of different shapes."
+                )
+
+            # In place addition of underlying covariance array
+            self._COVARIANCE_ARRAY += other.covariance_array
+
+        else:
+            raise TypeError(
+                f"Expected scalar, numpy/scipy array, or "
+                f"DenseCovariance/SparseCovariance isntance; "
+                f"received {type(other)}"
+            )
+        return self
+
+    def __sub__(self, other: Union['DenseCovariance', 'SparseCovariance', float, int, complex]) -> 'DenseCovariance':
+        """Subtraction of covariance operators self - other """
+
+        if isinstance(other, Number):
+            cov = self.covariance_array - other
+            return DenseCovariance(
+                waveform_shape=self.waveform_shape,
+                covariance=cov,
+                dtype=cov.dtype,
+            )
+
+        elif isinstance(other, (DenseCovariance, SparseCovariance)):
+            if self.shape !=other.shape:
+                raise TypeError(
+                    f"Inconsistent shapes {self.shape} != {other.shape}"
+                )
+            if self.waveform_shape != other.waveform_shape:
+                warnings.warn(
+                    f"Subtraction of two covariances associated with waveforms of different shapes."
+                )
+
+            cov = self.covariance_array - other.covariance_array
+            return DenseCovariance(
+                waveform_shape=self.waveform_shape,
+                covariance=cov,
+                dtype=cov.dtype,
+            )
+
+        else:
+            raise TypeError(
+                f"Expected scalar, numpy/scipy array, or "
+                f"DenseCovariance/SparseCovariance isntance; "
+                f"received {type(other)}"
+            )
+
+
+    def __isub__(self, other: Union['SparseCovariance', float, int, complex]) -> 'SparseCovariance':
+        """In-place subtraction."""
+        if isinstance(other, Number):
+            self.covariance_array -= other
+
+        elif isinstance(other, (DenseCovariance, SparseCovariance)):
+            if self.shape !=other.shape:
+                raise TypeError(
+                    f"Inconsistent shapes {self.shape} != {other.shape}"
+                )
+            if self.waveform_shape != other.waveform_shape:
+                warnings.warn(
+                    f"Addition of two covariances associated with waveforms of different shapes."
+                )
+
+            # In place addition of underlying covariance array
+            self._COVARIANCE_ARRAY -= other.covariance_array
+
+        else:
+            raise TypeError(
+                f"Expected scalar, numpy/scipy array, or "
+                f"DenseCovariance/SparseCovariance isntance; "
+                f"received {type(other)}"
+            )
+        return self
+
+
 class DiagonalCovariance(SparseCovariance):
     """Covariance matrix with only diagonal entries (no correlations)"""
 
@@ -533,7 +1061,7 @@ class DiagonalCovariance(SparseCovariance):
         :param format: Matrix format of the result (default "csc").
             See the formats supported by :py:class:`SparseCovariance`
         """
-        nx, ny = waveform_shape
+        nx, ny = waveform_shape[-2: ]
         size = nx * ny
         assert int(nx)==nx and nx>0 and int(ny)==ny and ny>0, \
             f"Unexpected shape {waveform_shape=} of {type(waveform_shape)=}"
@@ -591,7 +1119,7 @@ class SparseCovarianceLocalization(SparseCovariance):
             See the formats supported by :py:class:`SparseCovariance`
         """
         ## Size (square matrix of shpae (size, size)) & Localization step size
-        nx, ny = waveform_shape
+        nx, ny = waveform_shape[-2: ]
         assert int(nx)==nx and nx>0 and int(ny)==ny and ny>0, f"Unexpected shape {waveform_shape=} of {type(waveform_shape)=}"
         self._SIZE = nx * ny
         self._WAVEFORM_SHAPE = waveform_shape
@@ -648,7 +1176,7 @@ class SparseCovarianceLocalization(SparseCovariance):
     def neighborhood(self, i, j):
         """find points in valid neighborhood of given coordinates based on step size"""
         neighborhood = []
-        nx, ny = self.waveform_shape
+        nx, ny = self.waveform_shape[-2: ]
         for x_coord in range(max(0, i-self.step_size), min(nx, i+self.step_size+1)):
             for y_coord in range(max(0, j-self.step_size), min(ny, j+self.step_size+1)):
                 neighborhood.append((x_coord, y_coord))
@@ -664,10 +1192,9 @@ class SparseCovarianceLocalization(SparseCovariance):
 
 
 
-
 ## Helper functions
-def cholesky(cov : Union[SparseCovariance, sp.sparray],
-             lower : bool = True, ) -> Union[SparseCovariance, sp.sparray]:
+def cholesky(cov : Union[SparseCovariance, sp.sparray, DenseCovariance, np.ndarray],
+             lower : bool = True, ) -> Union[SparseCovariance, sp.sparray, DenseCovariance, np.ndarray]:
     """
     Evaluate the Cholesky factor of the covariance matrix where
     :math:`A=LL*`.
@@ -684,63 +1211,74 @@ def cholesky(cov : Union[SparseCovariance, sp.sparray],
     # Copy if needed
     if isinstance(cov, Covariance):
         cov_np = cov.covariance_array
-    elif sp.issparse(cov):
+    elif sp.issparse(cov) or isinstance(cov, np.ndarray):
         cov_np = cov
     else:
         raise TypeError(
-            f"Unsupported {type(cov)=}; expected Covariance or scipy sparse array"
+            f"Unsupported {type(cov)=}; expected Covariance or "
+            f"scipy sparse array or numpy array"
         )
 
-    # Sparse LU factorization
-    if sp_cholesky is not None:
-        factor = sp_cholesky(cov_np)
-        std = factor.L()
-        std @= std.conjugate().T
+    if isinstance(cov_np, np.ndarray):
+        std = np.linalg.cholesky(cov_np, upper=not lower)
 
-    else:
-        try:
-            LU = splinalg.splu(cov_np, diag_pivot_thresh=0, permc_spec="NATURAL")
-        except Exception as err:
-            print(
-                f"Cholesky factorization failed!\n"
-                f"Failed to use efficient LU factorization for sparse matrices; \n"
-                f"Unexpected {err=} of {type(err)=}"
-            )
-            raise
+    elif sp.issparse(cov_np):
+        # Sparse LU factorization
+        if sp_cholesky is not None:
+            factor = sp_cholesky(cov_np)
+            std = factor.L()
+            std @= std.conjugate().T
 
         else:
-            # Check the matrix is positive semi definite:
-            if any(LU.perm_r != np.arange(cov_np.shape[0])) or any(
-                LU.U.diagonal() < 0
-            ):
-                # Compose error message and raise
-                msg = f"Cholesky factorization failed!\n"
-                msg += f"Failed to use efficient LU factorization for sparse matrices; \n"
-                msg += f"{LU.perm_r=}; \n"
-                msg += f"{LU.U.diagonal()=}; \n"
-                msg += f"{any(LU.perm_r != np.arange(cov_np.shape[0]))=};\n"
-                msg += f"{any(LU.U.diagonal() < 0)=}"
-                raise TypeError(msg)
+            try:
+                LU = splinalg.splu(cov_np, diag_pivot_thresh=0, permc_spec="NATURAL")
+            except Exception as err:
+                print(
+                    f"Cholesky factorization failed!\n"
+                    f"Failed to use efficient LU factorization for sparse matrices; \n"
+                    f"Unexpected {err=} of {type(err)=}"
+                )
+                raise
 
             else:
-                # Calculate the lower Cholesky factor
-                std = LU.L @ (sp.diags(LU.U.diagonal() ** 0.5))
+                # Check the matrix is positive semi definite:
+                if any(LU.perm_r != np.arange(cov_np.shape[0])) or any(
+                    LU.U.diagonal() < 0
+                ):
+                    # Compose error message and raise
+                    msg = f"Cholesky factorization failed!\n"
+                    msg += f"Failed to use efficient LU factorization for sparse matrices; \n"
+                    msg += f"{LU.perm_r=}; \n"
+                    msg += f"{LU.U.diagonal()=}; \n"
+                    msg += f"{any(LU.perm_r != np.arange(cov_np.shape[0]))=};\n"
+                    msg += f"{any(LU.U.diagonal() < 0)=}"
+                    raise TypeError(msg)
 
-                # Transpose if upper factor is needed
-                if not lower: std = std.T
+                else:
+                    # Calculate the lower Cholesky factor
+                    std = LU.L @ (sp.diags(LU.U.diagonal() ** 0.5))
 
-    # Convert format if needed
-    if std.format != cov.format:
-        if cov.format == "csc":
-            std = std.tocsc()
-        elif cov.format == "csr":
-            std = std.tocsc()
-        elif cov.format == "coo":
-            std = std.tocoo()
-        else:
-            raise TypeError(
-                f"Unexpected format of the covariance {cov.format=}"
-            )
+                    # Transpose if upper factor is needed
+                    if not lower: std = std.T
+
+        # Convert format if needed
+        if std.format != cov.format:
+            if cov.format == "csc":
+                std = std.tocsc()
+            elif cov.format == "csr":
+                std = std.tocsc()
+            elif cov.format == "coo":
+                std = std.tocoo()
+            else:
+                raise TypeError(
+                    f"Unexpected format of the covariance {cov.format=}"
+                )
+
+    else:
+        raise TypeError(
+            "Unexpected {type(cov_np)=}; expected numpy array or scipy sparse array!"
+        )
+
     if isinstance(cov, Covariance):
         _std = cov.copy()
         _std.covariance_array = std

@@ -154,6 +154,10 @@ class RandomNumberGenerationMixin:
         return self._RNG
 
 
+
+
+
+
 class GaussianNoise(Noise, RandomNumberGenerationMixin):
     """
     A simple Gaussian noise model with a give `mean` and `covariance` matrix.
@@ -178,20 +182,34 @@ class GaussianNoise(Noise, RandomNumberGenerationMixin):
         unless `create_copies` is set to `True`.
     """
 
-    def __init__(self, mean: Wave, covariance: Covariance, create_copies: bool = False,
-                 random_seed: Union[None, int] = None, verbose: bool = False, ):
+    def __init__(
+        self,
+        mean: Union[Wave, np.ndarray],
+        covariance: Covariance,
+        create_copies: bool = False,
+        random_seed: Union[None, int] = None,
+        verbose: bool = False,
+    ):
         # Check dimensionality and data types
-        if not isinstance(mean, Wave):
+        if not isinstance(mean, (Wave, np.ndarray)):
             raise TypeError(
-                f"The mean is expected to be a Wave instance not {type(mean)}"
+                f"The mean is expected to be a numpy array or a Wave instance not {type(mean)=}"
             )
         if not isinstance(covariance, Covariance):
             raise TypeError(
-                f"The covariance is expected to be a Covariance instance not {type(mean)}"
+                f"The covariance is expected to be a Covariance instance not {type(covariance)=}"
             )
-        if covariance.waveform_shape not in [mean.shape, mean.shape[1: ]]:
+        if not (
+            covariance.waveform_shape in [mean.shape, mean.shape[-2: ]] or
+            (
+                isinstance(mean, np.ndarray) and
+                mean.ndim == 1 and
+                covariance.waveform_shape[-2]*covariance.waveform_shape[-1] == mean.size
+            )
+        ):
             raise TypeError(
-                f"Unconformable sizes/shapes of the mean and the covariance.\n"
+                f"Unconformable types/sizes/shapes of the mean and the covariance.\n"
+                f"{type(mean)=}; {type(covariance)=}\n"
                 f"{mean.shape=}; {covariance.waveform_shape=}"
             )
 
@@ -210,6 +228,15 @@ class GaussianNoise(Noise, RandomNumberGenerationMixin):
         self.update_random_number_generator(random_seed=random_seed)
         self._RANDOM_SEED = random_seed
         ## Initialization Done.
+
+    def copy(self):
+        return GaussianNoise(
+            mean=self.mean,
+            covariance=self.covariance,
+            create_copies=True,
+            random_seed=self.random_seed,
+            verbose=self.verbose,
+        )
 
     def generate_white_noise(self, truncate : bool = False, truncate_threshold=3, ):
         """
@@ -256,7 +283,7 @@ class GaussianNoise(Noise, RandomNumberGenerationMixin):
             noise_imag[noise_imag < -truncate_threshold] = -truncate_threshold
 
         # return results
-        return (noise_re + 1j *noise_imag).reshape(self.waveform_shape)
+        return (noise_re + 1j *noise_imag).reshape(self.waveform_shape[-2: ])
 
     def generate_noise(self):
         """
@@ -281,13 +308,23 @@ class GaussianNoise(Noise, RandomNumberGenerationMixin):
         if _DEBUG: t = time.time()
         # Add a scaled random noise (with the underlying covariance matrix) to the underlying mean
         sample = self.mean.copy()
-        if sample.form.ndim == 3:
+        if isinstance(sample, Wave):
+            sample_form = sample.form
+        elif isinstance(sample, np.ndarray):
+            sample_form = sample
+        else:
+            raise TypeError(
+                f"Unexpected {type(self.mean)=}"
+            )
+        if sample_form.ndim == 3:
             # Generate noise (once) for all replicas
             noise = self.generate_noise()
             for j in range(sample.form.shape[0]):
-                sample.form[j, ...] += noise
-        elif sample.form.ndim == 2:
-            sample.form += self.generate_noise()
+                sample_form[j, ...] += noise
+        elif sample_form.ndim == 2:
+            sample_form += self.generate_noise()
+        elif sample_form.ndim == 1:
+            sample_form += self.generate_noise().ravel()
         else:
             raise TypeError(
                 f"Unexpected waveform shape {sample.form.shape}"
@@ -526,7 +563,7 @@ class ComplexGaussianNoise(GaussianNoise):
             noise /= 2.0
 
         # Reshape and return
-        noise = noise.reshape(self.waveform_shape)
+        noise = noise.reshape(self.waveform_shape[-2: ])
         return noise
 
     def real_composite_covariance(self, ):

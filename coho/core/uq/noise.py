@@ -155,9 +155,6 @@ class RandomNumberGenerationMixin:
 
 
 
-
-
-
 class GaussianNoise(Noise, RandomNumberGenerationMixin):
     """
     A simple Gaussian noise model with a give `mean` and `covariance` matrix.
@@ -200,7 +197,7 @@ class GaussianNoise(Noise, RandomNumberGenerationMixin):
                 f"The covariance is expected to be a Covariance instance not {type(covariance)=}"
             )
         if not (
-            covariance.waveform_shape in [mean.shape, mean.shape[-2: ]] or
+            covariance.waveform_shape[-2: ] in [mean.shape, mean.shape[-2: ]] or
             (
                 isinstance(mean, np.ndarray) and
                 mean.ndim == 1 and
